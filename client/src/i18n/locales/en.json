@@ -423,5 +423,22 @@
     "english": "English",
     "hindi": "हिन्दी",
     "switchLanguage": "Switch Language"
+  },
+  "pwa": {
+    "offline": "You are offline — changes will be saved and synced when back online",
+    "online": "Back online",
+    "installApp": "Install",
+    "installPrompt": "Install this app for faster access and offline use",
+    "updateAvailable": "A new version is available",
+    "reload": "Reload",
+    "pendingSync": "Pending Sync",
+    "savedOffline": "Saved offline — will sync when online",
+    "syncSuccess": "Offline changes synced",
+    "syncFailed": "Some changes failed to sync",
+    "discard": "Discard",
+    "retry": "Retry All",
+    "clearQueue": "Discard All",
+    "noItems": "No pending items",
+    "loginRequiresInternet": "Login requires an internet connection"
   }
 }

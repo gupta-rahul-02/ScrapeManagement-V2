@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import errorHandler from './middleware/errorHandler.js';
+import idempotency from './middleware/idempotency.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,6 +61,9 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Idempotency guard — deduplicates mutations when Idempotency-Key header is present
+app.use(idempotency);
 
 // API Routes
 app.use('/api/auth', authRoutes);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -8,6 +8,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'manager' });
   const [loading, setLoading] = useState(false);
+  const [online, setOnline] = useState(navigator.onLine);
   const { login, register } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -15,8 +16,20 @@ export default function Login() {
   const currentLang = i18n.language?.startsWith('hi') ? 'hi' : 'en';
   const toggleLang = () => i18n.changeLanguage(currentLang === 'en' ? 'hi' : 'en');
 
+  useEffect(() => {
+    const goOn = () => setOnline(true);
+    const goOff = () => setOnline(false);
+    window.addEventListener('online', goOn);
+    window.addEventListener('offline', goOff);
+    return () => { window.removeEventListener('online', goOn); window.removeEventListener('offline', goOff); };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!navigator.onLine) {
+      toast.error(t('pwa.loginRequiresInternet'));
+      return;
+    }
     setLoading(true);
     try {
       if (isLogin) {
@@ -113,9 +126,15 @@ export default function Login() {
               </>
             )}
 
+            {!online && (
+              <p className="text-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg py-2 px-3">
+                {t('pwa.loginRequiresInternet')}
+              </p>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !online}
               className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
               {loading ? t('auth.pleaseWait') : isLogin ? t('auth.signIn') : t('auth.createAccount')}

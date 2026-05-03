@@ -3,6 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import OfflineBanner from './OfflineBanner.jsx';
+import PendingSyncBadge from './PendingSyncBadge.jsx';
+import InstallPrompt from './InstallPrompt.jsx';
+import UpdatePrompt from './UpdatePrompt.jsx';
 import {
   HomeIcon,
   CubeIcon,
@@ -57,6 +61,8 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <OfflineBanner />
+      <UpdatePrompt />
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -95,6 +101,7 @@ export default function Layout({ children }) {
           <div className="flex items-center justify-between px-6 py-5 border-b dark:border-slate-700">
             <h1 className="text-xl font-bold text-indigo-600">{t('nav.appName')}</h1>
             <div className="flex items-center gap-1">
+              <PendingSyncBadge />
               <button
                 onClick={toggleLang}
                 className="px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-slate-700 transition-colors"
@@ -156,6 +163,7 @@ export default function Layout({ children }) {
             <h1 className="text-lg font-bold text-indigo-600">{t('nav.appName')}</h1>
           </div>
           <div className="flex items-center gap-1">
+            <PendingSyncBadge />
             <button
               onClick={toggleLang}
               className="px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-slate-700 transition-colors"
@@ -173,7 +181,10 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        <main className="p-6">{children}</main>
+        <main className="p-6">
+          <InstallPrompt />
+          {children}
+        </main>
       </div>
     </div>
   );

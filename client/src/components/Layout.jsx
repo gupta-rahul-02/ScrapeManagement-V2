@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import {
@@ -25,28 +26,32 @@ import {
 } from '@heroicons/react/24/outline';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon, roles: ['owner', 'manager'] },
-  { name: 'Purchases', href: '/purchases', icon: CubeIcon, roles: ['owner', 'manager'] },
-  { name: 'Inventory', href: '/inventory', icon: BuildingStorefrontIcon, roles: ['owner', 'manager'] },
-  { name: 'Sales', href: '/sales', icon: BanknotesIcon, roles: ['owner', 'manager'] },
-  { name: 'Challans', href: '/challans', icon: DocumentTextIcon, roles: ['owner', 'manager'] },
-  { name: 'Payments', href: '/payments', icon: BanknotesIcon, roles: ['owner', 'manager'] },
-  { name: 'Expenses', href: '/expenses', icon: ReceiptRefundIcon, roles: ['owner', 'manager'] },
-  { name: 'Ledger', href: '/ledger', icon: ClipboardDocumentListIcon, roles: ['owner', 'manager'] },
-  { name: 'Vendors', href: '/vendors', icon: UserGroupIcon, roles: ['owner', 'manager'] },
-  { name: 'Buyers', href: '/buyers', icon: ScaleIcon, roles: ['owner', 'manager'] },
-  { name: 'Categories', href: '/categories', icon: TagIcon, roles: ['owner', 'manager'] },
-  { name: 'Godowns', href: '/godowns', icon: BuildingOfficeIcon, roles: ['owner', 'manager'] },
-  { name: 'Trucks', href: '/trucks', icon: TruckIcon, roles: ['owner', 'manager'] },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, roles: ['owner'] },
-  { name: 'Users', href: '/users', icon: UsersIcon, roles: ['owner'] },
+  { key: 'dashboard', href: '/', icon: HomeIcon, roles: ['owner', 'manager'] },
+  { key: 'purchases', href: '/purchases', icon: CubeIcon, roles: ['owner', 'manager'] },
+  { key: 'inventory', href: '/inventory', icon: BuildingStorefrontIcon, roles: ['owner', 'manager'] },
+  { key: 'sales', href: '/sales', icon: BanknotesIcon, roles: ['owner', 'manager'] },
+  { key: 'challans', href: '/challans', icon: DocumentTextIcon, roles: ['owner', 'manager'] },
+  { key: 'payments', href: '/payments', icon: BanknotesIcon, roles: ['owner', 'manager'] },
+  { key: 'expenses', href: '/expenses', icon: ReceiptRefundIcon, roles: ['owner', 'manager'] },
+  { key: 'ledger', href: '/ledger', icon: ClipboardDocumentListIcon, roles: ['owner', 'manager'] },
+  { key: 'vendors', href: '/vendors', icon: UserGroupIcon, roles: ['owner', 'manager'] },
+  { key: 'buyers', href: '/buyers', icon: ScaleIcon, roles: ['owner', 'manager'] },
+  { key: 'categories', href: '/categories', icon: TagIcon, roles: ['owner', 'manager'] },
+  { key: 'godowns', href: '/godowns', icon: BuildingOfficeIcon, roles: ['owner', 'manager'] },
+  { key: 'trucks', href: '/trucks', icon: TruckIcon, roles: ['owner', 'manager'] },
+  { key: 'settings', href: '/settings', icon: Cog6ToothIcon, roles: ['owner'] },
+  { key: 'users', href: '/users', icon: UsersIcon, roles: ['owner'] },
 ];
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
+
+  const currentLang = i18n.language?.startsWith('hi') ? 'hi' : 'en';
+  const toggleLang = () => i18n.changeLanguage(currentLang === 'en' ? 'hi' : 'en');
 
   const filteredNav = navigation.filter((item) => item.roles.includes(user?.role));
 
@@ -58,7 +63,7 @@ export default function Layout({ children }) {
           <div className="fixed inset-0 bg-gray-600/75 dark:bg-black/75" onClick={() => setSidebarOpen(false)} />
           <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-slate-800 shadow-xl">
             <div className="flex items-center justify-between px-4 py-4 border-b dark:border-slate-700">
-              <h1 className="text-lg font-bold text-indigo-600">Scrap Mgmt</h1>
+              <h1 className="text-lg font-bold text-indigo-600">{t('nav.appName')}</h1>
               <button onClick={() => setSidebarOpen(false)}>
                 <XMarkIcon className="h-6 w-6 dark:text-slate-300" />
               </button>
@@ -66,7 +71,7 @@ export default function Layout({ children }) {
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               {filteredNav.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -76,7 +81,7 @@ export default function Layout({ children }) {
                   }`}
                 >
                   <item.icon className="h-5 w-5" />
-                  {item.name}
+                  {t(`nav.${item.key}`)}
                 </Link>
               ))}
             </nav>
@@ -88,19 +93,28 @@ export default function Layout({ children }) {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
           <div className="flex items-center justify-between px-6 py-5 border-b dark:border-slate-700">
-            <h1 className="text-xl font-bold text-indigo-600">Scrap Mgmt</h1>
-            <button
-              onClick={toggle}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
-              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-            </button>
+            <h1 className="text-xl font-bold text-indigo-600">{t('nav.appName')}</h1>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleLang}
+                className="px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-slate-700 transition-colors"
+                title={t('language.switchLanguage')}
+              >
+                {currentLang === 'en' ? 'हिं' : 'EN'}
+              </button>
+              <button
+                onClick={toggle}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+                title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
             {filteredNav.map((item) => (
               <Link
-                key={item.name}
+                key={item.key}
                 to={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   location.pathname === item.href
@@ -109,7 +123,7 @@ export default function Layout({ children }) {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                {item.name}
+                {t(`nav.${item.key}`)}
               </Link>
             ))}
           </nav>
@@ -122,7 +136,7 @@ export default function Layout({ children }) {
               <button
                 onClick={logout}
                 className="text-gray-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
-                title="Logout"
+                title={t('nav.logout')}
               >
                 <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
               </button>
@@ -139,15 +153,24 @@ export default function Layout({ children }) {
             <button onClick={() => setSidebarOpen(true)}>
               <Bars3Icon className="h-6 w-6 text-gray-600 dark:text-slate-300" />
             </button>
-            <h1 className="text-lg font-bold text-indigo-600">Scrap Mgmt</h1>
+            <h1 className="text-lg font-bold text-indigo-600">{t('nav.appName')}</h1>
           </div>
-          <button
-            onClick={toggle}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
-            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleLang}
+              className="px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-slate-700 transition-colors"
+              title={t('language.switchLanguage')}
+            >
+              {currentLang === 'en' ? 'हिं' : 'EN'}
+            </button>
+            <button
+              onClick={toggle}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {dark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         <main className="p-6">{children}</main>

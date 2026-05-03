@@ -1,4 +1,5 @@
 import Vendor from '../models/Vendor.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getVendors = async (req, res, next) => {
   try {
@@ -36,6 +37,7 @@ export const createVendor = async (req, res, next) => {
       req.body.currentBalance = openingBalance;
     }
     const vendor = await Vendor.create(req.body);
+    logAudit({ req, action: 'create', module: 'Vendor', entityId: vendor._id, description: `Created vendor "${vendor.name}"`, metadata: { name: vendor.name, phone: vendor.phone } });
     res.status(201).json(vendor);
   } catch (error) {
     next(error);
@@ -49,6 +51,7 @@ export const updateVendor = async (req, res, next) => {
       runValidators: true,
     });
     if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    logAudit({ req, action: 'update', module: 'Vendor', entityId: vendor._id, description: `Updated vendor "${vendor.name}"`, metadata: req.body });
     res.json(vendor);
   } catch (error) {
     next(error);
@@ -63,6 +66,7 @@ export const deleteVendor = async (req, res, next) => {
       { returnDocument: 'after' }
     );
     if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    logAudit({ req, action: 'deactivate', module: 'Vendor', entityId: vendor._id, description: `Deactivated vendor "${vendor.name}"` });
     res.json({ message: 'Vendor deactivated' });
   } catch (error) {
     next(error);

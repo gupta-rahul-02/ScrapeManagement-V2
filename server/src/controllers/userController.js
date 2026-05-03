@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { logAudit } from '../utils/audit.js';
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -26,6 +27,7 @@ export const createUser = async (req, res, next) => {
     const userObj = user.toObject();
     delete userObj.password;
 
+    logAudit({ req, action: 'create', module: 'User', entityId: user._id, description: `Created user "${name}" (${role})`, metadata: { name, email, role } });
     res.status(201).json(userObj);
   } catch (error) {
     next(error);
@@ -58,6 +60,8 @@ export const updateUser = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(id, updates, { returnDocument: 'after', runValidators: true }).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const action = updates.isActive === false ? 'deactivate' : updates.isActive === true ? 'activate' : 'update';
+    logAudit({ req, action, module: 'User', entityId: user._id, description: `${action.charAt(0).toUpperCase() + action.slice(1)}d user "${user.name}"`, metadata: updates });
     res.json(user);
   } catch (error) {
     next(error);
@@ -81,6 +85,7 @@ export const resetPassword = async (req, res, next) => {
     user.password = password;
     await user.save();
 
+    logAudit({ req, action: 'reset_password', module: 'User', entityId: user._id, description: `Reset password for user "${user.name}"` });
     res.json({ message: 'Password reset successful' });
   } catch (error) {
     next(error);

@@ -1,4 +1,5 @@
 import Godown from '../models/Godown.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getGodowns = async (req, res, next) => {
   try {
@@ -27,6 +28,7 @@ export const getGodown = async (req, res, next) => {
 export const createGodown = async (req, res, next) => {
   try {
     const godown = await Godown.create(req.body);
+    logAudit({ req, action: 'create', module: 'Godown', entityId: godown._id, description: `Created godown "${godown.name}"` });
     res.status(201).json(godown);
   } catch (error) {
     next(error);
@@ -40,6 +42,7 @@ export const updateGodown = async (req, res, next) => {
       runValidators: true,
     });
     if (!godown) return res.status(404).json({ message: 'Godown not found' });
+    logAudit({ req, action: 'update', module: 'Godown', entityId: godown._id, description: `Updated godown "${godown.name}"`, metadata: req.body });
     res.json(godown);
   } catch (error) {
     next(error);
@@ -54,6 +57,7 @@ export const deleteGodown = async (req, res, next) => {
       { returnDocument: 'after' }
     );
     if (!godown) return res.status(404).json({ message: 'Godown not found' });
+    logAudit({ req, action: 'deactivate', module: 'Godown', entityId: godown._id, description: `Deactivated godown "${godown.name}"` });
     res.json({ message: 'Godown deactivated' });
   } catch (error) {
     next(error);

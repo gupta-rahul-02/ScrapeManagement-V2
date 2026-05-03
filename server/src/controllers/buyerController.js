@@ -1,4 +1,5 @@
 import Buyer from '../models/Buyer.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getBuyers = async (req, res, next) => {
   try {
@@ -36,6 +37,7 @@ export const createBuyer = async (req, res, next) => {
       req.body.currentBalance = openingBalance;
     }
     const buyer = await Buyer.create(req.body);
+    logAudit({ req, action: 'create', module: 'Buyer', entityId: buyer._id, description: `Created buyer "${buyer.name}"`, metadata: { name: buyer.name, phone: buyer.phone } });
     res.status(201).json(buyer);
   } catch (error) {
     next(error);
@@ -49,6 +51,7 @@ export const updateBuyer = async (req, res, next) => {
       runValidators: true,
     });
     if (!buyer) return res.status(404).json({ message: 'Buyer not found' });
+    logAudit({ req, action: 'update', module: 'Buyer', entityId: buyer._id, description: `Updated buyer "${buyer.name}"`, metadata: req.body });
     res.json(buyer);
   } catch (error) {
     next(error);
@@ -63,6 +66,7 @@ export const deleteBuyer = async (req, res, next) => {
       { returnDocument: 'after' }
     );
     if (!buyer) return res.status(404).json({ message: 'Buyer not found' });
+    logAudit({ req, action: 'deactivate', module: 'Buyer', entityId: buyer._id, description: `Deactivated buyer "${buyer.name}"` });
     res.json({ message: 'Buyer deactivated' });
   } catch (error) {
     next(error);

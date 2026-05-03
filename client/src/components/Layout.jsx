@@ -27,6 +27,7 @@ import {
   ReceiptRefundIcon,
   Cog6ToothIcon,
   UsersIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -43,8 +44,9 @@ const navigation = [
   { key: 'categories', href: '/categories', icon: TagIcon, roles: ['owner', 'manager'] },
   { key: 'godowns', href: '/godowns', icon: BuildingOfficeIcon, roles: ['owner', 'manager'] },
   { key: 'trucks', href: '/trucks', icon: TruckIcon, roles: ['owner', 'manager'] },
-  { key: 'settings', href: '/settings', icon: Cog6ToothIcon, roles: ['owner'] },
-  { key: 'users', href: '/users', icon: UsersIcon, roles: ['owner'] },
+  { key: 'settings',  href: '/settings',   icon: Cog6ToothIcon,                  roles: ['owner'] },
+  { key: 'users',     href: '/users',      icon: UsersIcon,                       roles: ['owner'] },
+  { key: 'auditLog',  href: '/audit-log',  icon: ClipboardDocumentCheckIcon,      roles: ['owner'] },
 ];
 
 export default function Layout({ children }) {

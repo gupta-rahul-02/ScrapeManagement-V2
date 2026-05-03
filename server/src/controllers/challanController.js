@@ -4,6 +4,7 @@ import Challan from '../models/Challan.js';
 import Sale from '../models/Sale.js';
 import Buyer from '../models/Buyer.js';
 import LedgerEntry from '../models/LedgerEntry.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getChallans = async (req, res, next) => {
   try {
@@ -157,6 +158,14 @@ export const updateChallanDelivery = async (req, res, next) => {
     }
 
     await session.commitTransaction();
+    logAudit({
+      req,
+      action: 'mark_delivered',
+      module: 'Challan',
+      entityId: challan._id,
+      description: `Marked challan ${challan.challanNo} as ${challan.status} — receiver weight: ${receiverWeight} kg`,
+      metadata: { challanNo: challan.challanNo, status: challan.status, senderWeight: challan.senderWeight, receiverWeight, weightDiff: challan.weightDiff },
+    });
     res.json(challan);
   } catch (error) {
     await session.abortTransaction();

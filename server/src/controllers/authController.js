@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { logAudit } from '../utils/audit.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -69,6 +70,7 @@ export const login = async (req, res, next) => {
     const token = generateToken(user._id);
     res.cookie('token', token, cookieOptions);
 
+    logAudit({ req, user, action: 'login', module: 'Auth', description: `User "${user.name}" logged in` });
     res.json({
       _id: user._id,
       name: user.name,
@@ -94,6 +96,7 @@ export const getMe = async (req, res, next) => {
 // @desc    Logout
 // @route   POST /api/auth/logout
 export const logout = async (req, res) => {
+  logAudit({ req, action: 'logout', module: 'Auth', description: `User "${req.user?.name}" logged out` });
   res.cookie('token', '', { ...cookieOptions, maxAge: 0 });
   res.json({ message: 'Logged out' });
 };

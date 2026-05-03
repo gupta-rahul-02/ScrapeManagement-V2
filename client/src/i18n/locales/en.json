@@ -43,7 +43,8 @@
     "select": "Select",
     "saving": "Saving...",
     "addedBy": "Added By",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "clear": "Clear"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -61,6 +62,7 @@
     "trucks": "Trucks",
     "settings": "Settings",
     "users": "Users",
+    "auditLog": "Audit Log",
     "logout": "Logout",
     "appName": "Scrap Management"
   },
@@ -423,6 +425,21 @@
     "english": "English",
     "hindi": "हिन्दी",
     "switchLanguage": "Switch Language"
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "module": "Module",
+    "action": "Action",
+    "user": "User",
+    "description": "Description",
+    "details": "Details",
+    "allModules": "All Modules",
+    "allActions": "All Actions",
+    "allUsers": "All Users",
+    "noResults": "No audit log entries found",
+    "loadFailed": "Failed to load audit log",
+    "totalEntries": "{{n}} total entries",
+    "pageInfo": "Page {{page}} of {{pages}} ({{total}} entries)"
   },
   "pwa": {
     "offline": "You are offline — changes will be saved and synced when back online",

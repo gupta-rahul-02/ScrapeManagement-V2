@@ -30,6 +30,7 @@ import expenseCategoryRoutes from './routes/expenseCategories.js';
 import expenseRoutes from './routes/expenses.js';
 import accountBalanceRoutes from './routes/accountBalances.js';
 import userRoutes from './routes/users.js';
+import auditLogRoutes from './routes/auditLogs.js';
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use('/api/expense-categories', expenseCategoryRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/account-balances', accountBalanceRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import Expense from '../models/Expense.js';
 import LedgerEntry from '../models/LedgerEntry.js';
 import AccountBalance from '../models/AccountBalance.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getExpenses = async (req, res, next) => {
   try {
@@ -109,6 +110,14 @@ export const createExpense = async (req, res, next) => {
     );
 
     await session.commitTransaction();
+    logAudit({
+      req,
+      action: 'create',
+      module: 'Expense',
+      entityId: expense[0]._id,
+      description: `Recorded expense: ${description} — ₹${amount} via ${mode}`,
+      metadata: { amount, mode, reference, description },
+    });
     res.status(201).json(expense[0]);
   } catch (error) {
     await session.abortTransaction();

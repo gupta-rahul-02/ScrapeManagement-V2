@@ -5,6 +5,7 @@ import LedgerEntry from '../models/LedgerEntry.js';
 import Vendor from '../models/Vendor.js';
 import Buyer from '../models/Buyer.js';
 import AccountBalance from '../models/AccountBalance.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getPayments = async (req, res, next) => {
   try {
@@ -185,6 +186,15 @@ export const createPayment = async (req, res, next) => {
     await LedgerEntry.create(entries, { session, ordered: true });
 
     await session.commitTransaction();
+
+    logAudit({
+      req,
+      action: 'create',
+      module: 'Payment',
+      entityId: payment[0]._id,
+      description: `Recorded payment ${type === 'out' ? 'to' : 'from'} ${partyType} — ₹${amount} via ${mode}`,
+      metadata: { type, partyType, amount, mode, reference },
+    });
 
     res.status(201).json(payment[0]);
   } catch (error) {

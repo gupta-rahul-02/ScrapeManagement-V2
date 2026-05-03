@@ -5,6 +5,7 @@ import GodownStock from '../models/GodownStock.js';
 import LedgerEntry from '../models/LedgerEntry.js';
 import Vendor from '../models/Vendor.js';
 import cloudinary from '../config/cloudinary.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getPurchases = async (req, res, next) => {
   try {
@@ -166,6 +167,15 @@ export const createPurchase = async (req, res, next) => {
       .populate('vendor', 'name phone')
       .populate('godown', 'name')
       .populate('items.category', 'name unit');
+
+    logAudit({
+      req,
+      action: 'create',
+      module: 'Purchase',
+      entityId: purchase[0]._id,
+      description: `Recorded purchase — ₹${totalAmount}, ${totalWeight} kg`,
+      metadata: { totalAmount, totalWeight, vendor, godown, items: items.length },
+    });
 
     res.status(201).json(populatedPurchase);
   } catch (error) {

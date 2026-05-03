@@ -6,6 +6,7 @@ import LedgerEntry from '../models/LedgerEntry.js';
 import Buyer from '../models/Buyer.js';
 import Challan from '../models/Challan.js';
 import cloudinary from '../config/cloudinary.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getSales = async (req, res, next) => {
   try {
@@ -220,6 +221,15 @@ export const createSale = async (req, res, next) => {
       .populate('buyer', 'name phone')
       .populate('godown', 'name')
       .populate('items.category', 'name unit');
+
+    logAudit({
+      req,
+      action: 'create',
+      module: 'Sale',
+      entityId: sale[0]._id,
+      description: `Recorded sale — ₹${totalAmount}, ${totalWeight} kg${truck ? ' with challan' : ' direct'}`,
+      metadata: { totalAmount, totalWeight, buyer, godown, truck: truck || null, items: items.length },
+    });
 
     res.status(201).json(populatedSale);
   } catch (error) {

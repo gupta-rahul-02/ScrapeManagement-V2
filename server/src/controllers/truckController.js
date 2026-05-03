@@ -1,4 +1,5 @@
 import Truck from '../models/Truck.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getTrucks = async (req, res, next) => {
   try {
@@ -32,6 +33,7 @@ export const getTruck = async (req, res, next) => {
 export const createTruck = async (req, res, next) => {
   try {
     const truck = await Truck.create(req.body);
+    logAudit({ req, action: 'create', module: 'Truck', entityId: truck._id, description: `Created truck "${truck.truckNumber}"` });
     res.status(201).json(truck);
   } catch (error) {
     next(error);
@@ -45,6 +47,7 @@ export const updateTruck = async (req, res, next) => {
       runValidators: true,
     });
     if (!truck) return res.status(404).json({ message: 'Truck not found' });
+    logAudit({ req, action: 'update', module: 'Truck', entityId: truck._id, description: `Updated truck "${truck.truckNumber}"`, metadata: req.body });
     res.json(truck);
   } catch (error) {
     next(error);
@@ -59,6 +62,7 @@ export const deleteTruck = async (req, res, next) => {
       { returnDocument: 'after' }
     );
     if (!truck) return res.status(404).json({ message: 'Truck not found' });
+    logAudit({ req, action: 'deactivate', module: 'Truck', entityId: truck._id, description: `Deactivated truck "${truck.truckNumber}"` });
     res.json({ message: 'Truck deactivated' });
   } catch (error) {
     next(error);

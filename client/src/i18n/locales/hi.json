@@ -43,7 +43,8 @@
     "select": "चुनें",
     "saving": "सहेजा जा रहा है...",
     "addedBy": "जोड़ने वाला",
-    "createdAt": "बनाया गया"
+    "createdAt": "बनाया गया",
+    "clear": "साफ़ करें"
   },
   "nav": {
     "dashboard": "डैशबोर्ड",
@@ -61,6 +62,7 @@
     "trucks": "ट्रक",
     "settings": "सेटिंग्स",
     "users": "उपयोगकर्ता",
+    "auditLog": "ऑडिट लॉग",
     "logout": "लॉग आउट",
     "appName": "स्क्रैप प्रबंधन"
   },
@@ -423,6 +425,21 @@
     "english": "English",
     "hindi": "हिन्दी",
     "switchLanguage": "भाषा बदलें"
+  },
+  "auditLog": {
+    "title": "ऑडिट लॉग",
+    "module": "मॉड्यूल",
+    "action": "क्रिया",
+    "user": "उपयोगकर्ता",
+    "description": "विवरण",
+    "details": "विस्तार",
+    "allModules": "सभी मॉड्यूल",
+    "allActions": "सभी क्रियाएं",
+    "allUsers": "सभी उपयोगकर्ता",
+    "noResults": "कोई ऑडिट लॉग प्रविष्टि नहीं मिली",
+    "loadFailed": "ऑडिट लॉग लोड करने में विफल",
+    "totalEntries": "{{n}} कुल प्रविष्टियाँ",
+    "pageInfo": "पृष्ठ {{page}} / {{pages}} ({{total}} प्रविष्टियाँ)"
   },
   "pwa": {
     "offline": "आप ऑफलाइन हैं — बदलाव सहेजे जाएंगे और ऑनलाइन होने पर सिंक होंगे",

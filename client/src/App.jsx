@@ -18,6 +18,7 @@ import Expenses from './pages/Expenses.jsx';
 import Ledger from './pages/Ledger.jsx';
 import Settings from './pages/Settings.jsx';
 import Users from './pages/Users.jsx';
+import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
   const { loading } = useAuth();
@@ -56,6 +57,7 @@ export default function App() {
                 <Route path="/trucks" element={<Trucks />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/users" element={<Users />} />
+                <Route path="/audit-log" element={<AuditLog />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

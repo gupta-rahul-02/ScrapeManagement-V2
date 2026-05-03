@@ -1,4 +1,5 @@
 import AccountBalance from '../models/AccountBalance.js';
+import { logAudit } from '../utils/audit.js';
 
 export const getAccountBalances = async (req, res, next) => {
   try {
@@ -33,6 +34,7 @@ export const setAccountBalance = async (req, res, next) => {
       { upsert: true, returnDocument: 'after', runValidators: true }
     );
 
+    logAudit({ req, action: 'update', module: 'Settings', entityId: account._id, description: `Updated ${accountType} opening balance to ₹${openingBalance}`, metadata: { accountType, openingBalance } });
     res.json(account);
   } catch (error) {
     next(error);

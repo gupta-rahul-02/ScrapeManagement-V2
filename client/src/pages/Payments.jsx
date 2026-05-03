@@ -12,6 +12,7 @@ export default function Payments() {
   const [buyers, setBuyers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ type: '', partyType: '' });
 
   const [form, setForm] = useState({
@@ -49,6 +50,8 @@ export default function Payments() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await api.post('/payments', {
         ...form,
@@ -60,6 +63,8 @@ export default function Payments() {
       fetchPayments();
     } catch (err) {
       toast.error(err.response?.data?.message || t('payments.recordError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -196,8 +201,8 @@ export default function Payments() {
               className="w-full px-3 py-2 border rounded-lg text-sm" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{t('payments.save')}</button>
+            <button type="button" disabled={submitting} onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">{t('common.cancel')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('payments.save')}</button>
           </div>
         </form>
       </Modal>

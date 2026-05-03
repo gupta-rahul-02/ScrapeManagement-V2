@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -8,6 +9,7 @@ import {
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!data) return <p className="text-gray-500">Failed to load dashboard</p>;
+  if (!data) return <p className="text-gray-500">{t('dashboard.loadFailed')}</p>;
 
   const trendData = data.saleTrend.map((s) => {
     const purchase = data.purchaseTrend.find((p) => p._id === s._id);
@@ -47,32 +49,32 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Today's Purchases"
+          title={t('dashboard.todaysPurchases')}
           value={`₹${(data.today.purchases.total || 0).toLocaleString()}`}
           sub={`${(data.today.purchases.weight || 0).toLocaleString()} kg`}
           color="bg-blue-50 text-blue-700"
         />
         <StatCard
-          title="Today's Sales"
+          title={t('dashboard.todaysSales')}
           value={`₹${(data.today.sales.total || 0).toLocaleString()}`}
           sub={`${(data.today.sales.weight || 0).toLocaleString()} kg`}
           color="bg-green-50 text-green-700"
         />
         <StatCard
-          title="Total Stock"
+          title={t('dashboard.totalStock')}
           value={`${data.totalStock.toLocaleString()} kg`}
-          sub="Across all godowns"
+          sub={t('dashboard.acrossGodowns')}
           color="bg-amber-50 text-amber-700"
         />
         <StatCard
-          title="Net Outstanding"
+          title={t('dashboard.netOutstanding')}
           value={`₹${(data.totalReceivable - data.totalPayable).toLocaleString()}`}
-          sub={`Recv: ₹${data.totalReceivable.toLocaleString()} | Pay: ₹${data.totalPayable.toLocaleString()}`}
+          sub={`${t('dashboard.recv')} ₹${data.totalReceivable.toLocaleString()} | ${t('dashboard.pay')} ₹${data.totalPayable.toLocaleString()}`}
           color="bg-purple-50 text-purple-700"
         />
       </div>
@@ -81,7 +83,7 @@ export default function Dashboard() {
       {data.disputedChallans > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700 font-medium">
-            ⚠️ {data.disputedChallans} disputed challan(s) — weight mismatch detected!
+            ⚠️ {t('dashboard.disputedAlert', { n: data.disputedChallans })}
           </p>
         </div>
       )}
@@ -90,7 +92,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Monthly Trend (6 months)</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">{t('dashboard.monthlyTrend')}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -106,7 +108,7 @@ export default function Dashboard() {
 
         {/* Category Stock */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Stock by Category</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">{t('dashboard.stockByCategory')}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={data.categoryStock}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -122,27 +124,30 @@ export default function Dashboard() {
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RecentList
-          title="Recent Purchases"
+          title={t('dashboard.recentPurchases')}
+          emptyText={t('dashboard.noActivity')}
           items={data.recentPurchases.map((p) => ({
-            label: p.vendor?.name || 'Unknown',
+            label: p.vendor?.name || t('dashboard.unknown'),
             value: `₹${p.totalAmount.toLocaleString()}`,
             sub: `${p.totalWeight} kg`,
           }))}
         />
         <RecentList
-          title="Recent Sales"
+          title={t('dashboard.recentSales')}
+          emptyText={t('dashboard.noActivity')}
           items={data.recentSales.map((s) => ({
-            label: s.buyer?.name || 'Unknown',
+            label: s.buyer?.name || t('dashboard.unknown'),
             value: `₹${s.totalAmount.toLocaleString()}`,
             sub: `${s.totalWeight} kg`,
           }))}
         />
         <RecentList
-          title="Recent Payments"
+          title={t('dashboard.recentPayments')}
+          emptyText={t('dashboard.noActivity')}
           items={data.recentPayments.map((p) => ({
-            label: p.partyId?.name || 'Unknown',
+            label: p.partyId?.name || t('dashboard.unknown'),
             value: `₹${p.amount.toLocaleString()}`,
-            sub: `${p.type === 'in' ? 'Received' : 'Paid'} - ${p.mode}`,
+            sub: `${p.type === 'in' ? t('dashboard.received') : t('dashboard.paid')} - ${p.mode}`,
           }))}
         />
       </div>
@@ -160,12 +165,12 @@ function StatCard({ title, value, sub, color }) {
   );
 }
 
-function RecentList({ title, items }) {
+function RecentList({ title, items, emptyText }) {
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h3 className="text-sm font-medium text-gray-700 mb-3">{title}</h3>
       {items.length === 0 ? (
-        <p className="text-sm text-gray-400">No recent activity</p>
+        <p className="text-sm text-gray-400">{emptyText}</p>
       ) : (
         <div className="space-y-2">
           {items.map((item, i) => (

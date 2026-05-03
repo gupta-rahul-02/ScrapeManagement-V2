@@ -1,32 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import toast from 'react-hot-toast';
 
-// ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
 const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN');
-
-const downloadExcel = async (url, filename) => {
-  try {
-    const res = await api.get(url, { responseType: 'blob' });
-    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success('Excel downloaded');
-  } catch {
-    toast.error('Failed to export');
-  }
-};
-
-const TABS = [
-  { key: 'master',      label: 'Master Ledger' },
-  { key: 'vendor',      label: 'Vendor Ledger' },
-  { key: 'buyer',       label: 'Buyer Ledger'  },
-  { key: 'outstanding', label: 'Outstanding'   },
-];
 
 const ACCOUNT_COLORS = {
   Vendor:    'bg-purple-100 text-purple-800',
@@ -39,14 +17,50 @@ const ACCOUNT_COLORS = {
 };
 
 export default function Ledger() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('outstanding');
 
-  // ── master state ─────────────────────────────────────────────────────────
+  const TABS = [
+    { key: 'master',      label: t('ledger.tabMaster') },
+    { key: 'vendor',      label: t('ledger.tabVendor') },
+    { key: 'buyer',       label: t('ledger.tabBuyer')  },
+    { key: 'outstanding', label: t('ledger.tabOutstanding') },
+  ];
+
+  const accountTypeLabel = (a) => {
+    const map = {
+      Vendor: t('ledger.vendor'),
+      Buyer: t('ledger.buyer'),
+      Purchases: t('ledger.purchases'),
+      Sales: t('ledger.sales'),
+      Cash: t('ledger.cash'),
+      Bank: t('ledger.bank'),
+      UPI: t('ledger.upi'),
+    };
+    return map[a] || a;
+  };
+
+  const downloadExcel = async (url, filename) => {
+    try {
+      const res = await api.get(url, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success(t('ledger.downloaded'));
+    } catch {
+      toast.error(t('ledger.exportFailed'));
+    }
+  };
+
+  // ── master state ─────────
   const [masterData,      setMasterData]      = useState(null);
   const [masterFilter,    setMasterFilter]    = useState({ accountType: '', startDate: '', endDate: '' });
   const [masterLoading,   setMasterLoading]   = useState(false);
 
-  // ── vendor / buyer party ledger state ─────────────────────────────────────
+  // ── vendor / buyer party ledger state ────
   const [vendors,      setVendors]      = useState([]);
   const [buyers,       setBuyers]       = useState([]);
   const [partyLoading, setPartyLoading] = useState(false);
@@ -59,22 +73,21 @@ export default function Ledger() {
   const [buyerData,      setBuyerData]      = useState(null);
   const [buyerLoading,   setBuyerLoading]   = useState(false);
 
-  // ── outstanding state ─────────────────────────────────────────────────────
+  // ── outstanding state ────
   const [outstanding, setOutstanding] = useState(null);
   const [outLoading,  setOutLoading]  = useState(false);
 
-  // ── data loaders ──────────────────────────────────────────────────────────
   const loadOutstanding = useCallback(async () => {
     setOutLoading(true);
     try {
       const { data } = await api.get('/ledger/outstanding');
       setOutstanding(data);
     } catch {
-      toast.error('Failed to load outstanding');
+      toast.error(t('ledger.loadOutstandingFailed'));
     } finally {
       setOutLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadPartyLists = useCallback(async () => {
     setPartyLoading(true);
@@ -86,11 +99,11 @@ export default function Ledger() {
       setVendors(vRes.data.vendors || vRes.data || []);
       setBuyers(bRes.data.buyers   || bRes.data || []);
     } catch {
-      toast.error('Failed to load parties');
+      toast.error(t('ledger.loadPartiesFailed'));
     } finally {
       setPartyLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadMasterLedger = useCallback(async () => {
     setMasterLoading(true);
@@ -102,11 +115,11 @@ export default function Ledger() {
       const { data } = await api.get('/ledger/master', { params });
       setMasterData(data);
     } catch {
-      toast.error('Failed to load master ledger');
+      toast.error(t('ledger.loadMasterFailed'));
     } finally {
       setMasterLoading(false);
     }
-  }, [masterFilter]);
+  }, [masterFilter, t]);
 
   const loadVendorLedger = useCallback(async (id) => {
     if (!id) return;
@@ -115,11 +128,11 @@ export default function Ledger() {
       const { data } = await api.get(`/ledger/vendor/${id}`);
       setVendorData(data);
     } catch {
-      toast.error('Failed to load vendor ledger');
+      toast.error(t('ledger.loadVendorFailed'));
     } finally {
       setVendorLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadBuyerLedger = useCallback(async (id) => {
     if (!id) return;
@@ -128,20 +141,18 @@ export default function Ledger() {
       const { data } = await api.get(`/ledger/buyer/${id}`);
       setBuyerData(data);
     } catch {
-      toast.error('Failed to load buyer ledger');
+      toast.error(t('ledger.loadBuyerFailed'));
     } finally {
       setBuyerLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  // ── effects ───────────────────────────────────────────────────────────────
   useEffect(() => { loadOutstanding(); }, [loadOutstanding]);
   useEffect(() => {
     if (tab === 'vendor' || tab === 'buyer') loadPartyLists();
     if (tab === 'master') loadMasterLedger();
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── tab switch helpers ────────────────────────────────────────────────────
   const goToVendorLedger = (vendor) => {
     setSelectedVendor(vendor._id);
     setTab('vendor');
@@ -155,25 +166,24 @@ export default function Ledger() {
     loadBuyerLedger(buyer._id);
   };
 
-  // ── reusable ledger table ─────────────────────────────────────────────────
   const LedgerTable = ({ entries, showAccount = false }) => (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-            {showAccount && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>}
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Debit</th>
-            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Credit</th>
-            {!showAccount && <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>}
-            {showAccount && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">Tx ID</th>}
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('common.date')}</th>
+            {showAccount && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('ledger.account')}</th>}
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('common.type')}</th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('common.description')}</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('ledger.debit')}</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('ledger.credit')}</th>
+            {!showAccount && <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('common.balance')}</th>}
+            {showAccount && <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">{t('ledger.txId')}</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
           {entries.length === 0 ? (
-            <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">No entries found</td></tr>
+            <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">{t('ledger.noEntries')}</td></tr>
           ) : entries.map((e) => {
             const isOpening = e.entryType === 'opening_balance';
             return (
@@ -182,13 +192,13 @@ export default function Ledger() {
                 {showAccount && (
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${ACCOUNT_COLORS[e.accountType] || 'bg-gray-100 text-gray-700'}`}>
-                      {e.accountType}
+                      {accountTypeLabel(e.accountType)}
                       {e.accountName ? ` – ${e.accountName}` : ''}
                     </span>
                   </td>
                 )}
                 <td className="px-3 py-2 capitalize text-gray-600">
-                  {isOpening ? <span className="text-amber-700">Opening</span> : e.entryType.replace('_', ' ')}
+                  {isOpening ? <span className="text-amber-700">{t('ledger.opening')}</span> : e.entryType.replace('_', ' ')}
                 </td>
                 <td className="px-3 py-2 text-gray-700">{e.description}</td>
                 <td className="px-3 py-2 text-right text-red-600 font-medium">{e.debit  ? fmt(e.debit)  : '–'}</td>
@@ -203,10 +213,9 @@ export default function Ledger() {
     </div>
   );
 
-  // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">Ledger</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('ledger.title')}</h1>
 
       {/* Tab bar */}
       <div className="border-b border-gray-200">
@@ -227,32 +236,31 @@ export default function Ledger() {
         </nav>
       </div>
 
-      {/* ── MASTER LEDGER ─────────────────────────────────────────── */}
+      {/* MASTER LEDGER */}
       {tab === 'master' && (
         <div className="space-y-4">
-          {/* Filters */}
           <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Account Type</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('ledger.accountType')}</label>
               <select
                 value={masterFilter.accountType}
                 onChange={(e) => setMasterFilter(f => ({ ...f, accountType: e.target.value }))}
                 className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
               >
-                <option value="">All Accounts</option>
+                <option value="">{t('ledger.allAccounts')}</option>
                 {['Vendor','Buyer','Purchases','Sales','Cash','Bank','UPI'].map(a => (
-                  <option key={a} value={a}>{a}</option>
+                  <option key={a} value={a}>{accountTypeLabel(a)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('common.from')}</label>
               <input type="date" value={masterFilter.startDate}
                 onChange={(e) => setMasterFilter(f => ({ ...f, startDate: e.target.value }))}
                 className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('common.to')}</label>
               <input type="date" value={masterFilter.endDate}
                 onChange={(e) => setMasterFilter(f => ({ ...f, endDate: e.target.value }))}
                 className="rounded-md border border-gray-300 px-2 py-1.5 text-sm" />
@@ -261,7 +269,7 @@ export default function Ledger() {
               onClick={loadMasterLedger}
               className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700"
             >
-              Apply
+              {t('common.apply')}
             </button>
             {masterData && masterData.entries.length > 0 && (
               <button
@@ -274,7 +282,7 @@ export default function Ledger() {
                 }}
                 className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
               >
-                Export Excel
+                {t('ledger.exportExcel')}
               </button>
             )}
           </div>
@@ -285,54 +293,53 @@ export default function Ledger() {
             </div>
           ) : masterData ? (
             <>
-              {/* Balance check */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-red-50 rounded-lg p-4">
-                  <p className="text-xs text-red-600 font-medium">Total Debits</p>
+                  <p className="text-xs text-red-600 font-medium">{t('ledger.totalDebits')}</p>
                   <p className="text-xl font-bold text-red-900">{fmt(masterData.totalDebit)}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4">
-                  <p className="text-xs text-green-600 font-medium">Total Credits</p>
+                  <p className="text-xs text-green-600 font-medium">{t('ledger.totalCredits')}</p>
                   <p className="text-xl font-bold text-green-900">{fmt(masterData.totalCredit)}</p>
                 </div>
                 <div className={`rounded-lg p-4 ${masterData.totalDebit === masterData.totalCredit ? 'bg-emerald-50' : 'bg-yellow-50'}`}>
                   <p className={`text-xs font-medium ${masterData.totalDebit === masterData.totalCredit ? 'text-emerald-600' : 'text-yellow-600'}`}>
-                    Balance Check
+                    {t('ledger.balanceCheck')}
                   </p>
                   <p className={`text-xl font-bold ${masterData.totalDebit === masterData.totalCredit ? 'text-emerald-900' : 'text-yellow-900'}`}>
-                    {masterData.totalDebit === masterData.totalCredit ? '✓ Balanced' : '⚠ Unbalanced'}
+                    {masterData.totalDebit === masterData.totalCredit ? t('ledger.balanced') : t('ledger.unbalanced')}
                   </p>
                 </div>
               </div>
 
               <div className="bg-white rounded-lg shadow">
                 <div className="px-4 py-3 border-b bg-gray-50 text-sm text-gray-500">
-                  {masterData.total} entries
+                  {t('ledger.entriesCount', { n: masterData.total })}
                 </div>
                 <LedgerTable entries={masterData.entries} showAccount={true} />
               </div>
             </>
           ) : (
-            <p className="text-center py-12 text-gray-400">Click Apply to load the master ledger</p>
+            <p className="text-center py-12 text-gray-400">{t('ledger.applyHint')}</p>
           )}
         </div>
       )}
 
-      {/* ── VENDOR LEDGER ─────────────────────────────────────────── */}
+      {/* VENDOR LEDGER */}
       {tab === 'vendor' && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow p-4 flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Select Vendor</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('ledger.selectVendor')}</label>
               {partyLoading ? (
-                <p className="text-sm text-gray-400">Loading…</p>
+                <p className="text-sm text-gray-400">{t('ledger.loadingDots')}</p>
               ) : (
                 <select
                   value={selectedVendor}
                   onChange={(e) => { setSelectedVendor(e.target.value); loadVendorLedger(e.target.value); }}
                   className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
                 >
-                  <option value="">— choose a vendor —</option>
+                  <option value="">{t('ledger.chooseVendor')}</option>
                   {vendors.map(v => <option key={v._id} value={v._id}>{v.name}</option>)}
                 </select>
               )}
@@ -355,38 +362,38 @@ export default function Ledger() {
                     onClick={() => downloadExcel(`/ledger/export/vendor/${selectedVendor}`, `${vendorData.party?.name || 'vendor'}-ledger.xlsx`)}
                     className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
                   >
-                    Export Excel
+                    {t('ledger.exportExcel')}
                   </button>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Balance Payable</p>
+                    <p className="text-xs text-gray-500">{t('ledger.balancePayable')}</p>
                     <p className="text-lg font-bold text-red-600">{fmt(vendorData.party?.currentBalance)}</p>
                   </div>
                 </div>
               </div>
               <LedgerTable entries={vendorData.entries} showAccount={false} />
-              <div className="px-4 py-2 border-t text-xs text-gray-400 text-right">{vendorData.total} entries</div>
+              <div className="px-4 py-2 border-t text-xs text-gray-400 text-right">{t('ledger.entriesCount', { n: vendorData.total })}</div>
             </div>
           ) : (
-            !selectedVendor && <p className="text-center py-12 text-gray-400">Select a vendor to view their ledger</p>
+            !selectedVendor && <p className="text-center py-12 text-gray-400">{t('ledger.selectVendorHint')}</p>
           )}
         </div>
       )}
 
-      {/* ── BUYER LEDGER ──────────────────────────────────────────── */}
+      {/* BUYER LEDGER */}
       {tab === 'buyer' && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow p-4 flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Select Buyer</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('ledger.selectBuyer')}</label>
               {partyLoading ? (
-                <p className="text-sm text-gray-400">Loading…</p>
+                <p className="text-sm text-gray-400">{t('ledger.loadingDots')}</p>
               ) : (
                 <select
                   value={selectedBuyer}
                   onChange={(e) => { setSelectedBuyer(e.target.value); loadBuyerLedger(e.target.value); }}
                   className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
                 >
-                  <option value="">— choose a buyer —</option>
+                  <option value="">{t('ledger.chooseBuyer')}</option>
                   {buyers.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
                 </select>
               )}
@@ -402,31 +409,31 @@ export default function Ledger() {
               <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-gray-900">{buyerData.party?.name}</p>
-                  <p className="text-xs text-gray-500">{buyerData.party?.phone} · GST: {buyerData.party?.gstNo || '—'}</p>
+                  <p className="text-xs text-gray-500">{buyerData.party?.phone} · {t('ledger.gst')} {buyerData.party?.gstNo || '—'}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => downloadExcel(`/ledger/export/buyer/${selectedBuyer}`, `${buyerData.party?.name || 'buyer'}-ledger.xlsx`)}
                     className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
                   >
-                    Export Excel
+                    {t('ledger.exportExcel')}
                   </button>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Balance Receivable</p>
+                    <p className="text-xs text-gray-500">{t('ledger.balanceReceivable')}</p>
                     <p className="text-lg font-bold text-green-600">{fmt(buyerData.party?.currentBalance)}</p>
                   </div>
                 </div>
               </div>
               <LedgerTable entries={buyerData.entries} showAccount={false} />
-              <div className="px-4 py-2 border-t text-xs text-gray-400 text-right">{buyerData.total} entries</div>
+              <div className="px-4 py-2 border-t text-xs text-gray-400 text-right">{t('ledger.entriesCount', { n: buyerData.total })}</div>
             </div>
           ) : (
-            !selectedBuyer && <p className="text-center py-12 text-gray-400">Select a buyer to view their ledger</p>
+            !selectedBuyer && <p className="text-center py-12 text-gray-400">{t('ledger.selectBuyerHint')}</p>
           )}
         </div>
       )}
 
-      {/* ── OUTSTANDING ───────────────────────────────────────────── */}
+      {/* OUTSTANDING */}
       {tab === 'outstanding' && (
         outLoading ? (
           <div className="flex justify-center py-12">
@@ -434,31 +441,29 @@ export default function Ledger() {
           </div>
         ) : outstanding ? (
           <div className="space-y-4">
-            {/* Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-red-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-red-600">Total Payable (to Vendors)</p>
+                <p className="text-xs font-medium text-red-600">{t('ledger.totalPayable')}</p>
                 <p className="text-xl font-bold text-red-900">{fmt(outstanding.totalPayable)}</p>
               </div>
               <div className="bg-green-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-green-600">Total Receivable (from Buyers)</p>
+                <p className="text-xs font-medium text-green-600">{t('ledger.totalReceivable')}</p>
                 <p className="text-xl font-bold text-green-900">{fmt(outstanding.totalReceivable)}</p>
               </div>
               <div className="bg-indigo-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-indigo-600">Net Position</p>
+                <p className="text-xs font-medium text-indigo-600">{t('ledger.netPosition')}</p>
                 <p className="text-xl font-bold text-indigo-900">{fmt(outstanding.netPosition)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Vendors */}
               <div className="bg-white rounded-lg shadow">
                 <h3 className="px-4 py-3 text-sm font-semibold text-gray-700 border-b bg-gray-50">
-                  Vendor Payables (We Owe)
+                  {t('ledger.vendorPayables')}
                 </h3>
                 <div className="divide-y max-h-96 overflow-y-auto">
                   {outstanding.vendors.length === 0 ? (
-                    <p className="px-4 py-4 text-sm text-gray-400">No outstanding payables</p>
+                    <p className="px-4 py-4 text-sm text-gray-400">{t('ledger.noPayables')}</p>
                   ) : outstanding.vendors.map((v) => (
                     <div key={v._id}
                       className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer"
@@ -470,21 +475,20 @@ export default function Ledger() {
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-red-600">{fmt(v.currentBalance)}</span>
-                        <p className="text-xs text-indigo-500 hover:underline">View ledger →</p>
+                        <p className="text-xs text-indigo-500 hover:underline">{t('ledger.viewLedger')}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Buyers */}
               <div className="bg-white rounded-lg shadow">
                 <h3 className="px-4 py-3 text-sm font-semibold text-gray-700 border-b bg-gray-50">
-                  Buyer Receivables (They Owe Us)
+                  {t('ledger.buyerReceivables')}
                 </h3>
                 <div className="divide-y max-h-96 overflow-y-auto">
                   {outstanding.buyers.length === 0 ? (
-                    <p className="px-4 py-4 text-sm text-gray-400">No outstanding receivables</p>
+                    <p className="px-4 py-4 text-sm text-gray-400">{t('ledger.noReceivables')}</p>
                   ) : outstanding.buyers.map((b) => (
                     <div key={b._id}
                       className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer"
@@ -496,7 +500,7 @@ export default function Ledger() {
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-green-600">{fmt(b.currentBalance)}</span>
-                        <p className="text-xs text-indigo-500 hover:underline">View ledger →</p>
+                        <p className="text-xs text-indigo-500 hover:underline">{t('ledger.viewLedger')}</p>
                       </div>
                     </div>
                   ))}
@@ -505,7 +509,7 @@ export default function Ledger() {
             </div>
           </div>
         ) : (
-          <p className="text-center py-12 text-gray-400">Loading…</p>
+          <p className="text-center py-12 text-gray-400">{t('ledger.loadingDots')}</p>
         )
       )}
     </div>

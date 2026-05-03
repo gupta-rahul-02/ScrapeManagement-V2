@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import toast from 'react-hot-toast';
 
-const fmt = (n) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
-
 export default function Settings() {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
@@ -14,7 +14,7 @@ export default function Settings() {
       const { data } = await api.get('/account-balances');
       setAccounts(data);
     } catch {
-      toast.error('Failed to load account balances');
+      toast.error(t('settings.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -26,10 +26,10 @@ export default function Settings() {
     setSaving(accountType);
     try {
       await api.put('/account-balances', { accountType, openingBalance: Number(value) });
-      toast.success(`${accountType} opening balance updated`);
+      toast.success(t('settings.updated', { accountType }));
       fetchBalances();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error saving');
+      toast.error(err.response?.data?.message || t('settings.saveError'));
     } finally {
       setSaving(null);
     }
@@ -37,14 +37,14 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
 
       {/* Account Opening Balances */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-800">Account Opening Balances</h2>
+          <h2 className="text-lg font-semibold text-gray-800">{t('settings.openingBalances')}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Set the starting balance for Cash, Bank, and UPI accounts. All transactions will build on these values.
+            {t('settings.openingBalancesDesc')}
           </p>
         </div>
         {loading ? (
@@ -59,6 +59,7 @@ export default function Settings() {
                 account={account}
                 saving={saving === account.accountType}
                 onSave={handleSave}
+                t={t}
               />
             ))}
           </div>
@@ -68,7 +69,7 @@ export default function Settings() {
   );
 }
 
-function AccountRow({ account, saving, onSave }) {
+function AccountRow({ account, saving, onSave, t }) {
   const [value, setValue] = useState(String(account.openingBalance || 0));
   const [edited, setEdited] = useState(false);
 
@@ -76,6 +77,12 @@ function AccountRow({ account, saving, onSave }) {
     Cash: '💵',
     Bank: '🏦',
     UPI: '📱',
+  };
+
+  const labels = {
+    Cash: t('settings.cash'),
+    Bank: t('settings.bank'),
+    UPI: t('settings.upi'),
   };
 
   const handleChange = (e) => {
@@ -93,7 +100,7 @@ function AccountRow({ account, saving, onSave }) {
     <form onSubmit={handleSubmit} className="flex items-center gap-4">
       <div className="flex items-center gap-3 w-32">
         <span className="text-2xl">{icons[account.accountType]}</span>
-        <span className="font-medium text-gray-900">{account.accountType}</span>
+        <span className="font-medium text-gray-900">{labels[account.accountType] || account.accountType}</span>
       </div>
       <div className="flex-1 max-w-xs">
         <div className="relative">
@@ -113,11 +120,11 @@ function AccountRow({ account, saving, onSave }) {
           disabled={saving}
           className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
       )}
       {!edited && (
-        <span className="text-sm text-gray-400">Current: {`₹${Number(account.openingBalance || 0).toLocaleString('en-IN')}`}</span>
+        <span className="text-sm text-gray-400">{t('settings.current', { n: Number(account.openingBalance || 0).toLocaleString('en-IN') })}</span>
       )}
     </form>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import toast from 'react-hot-toast';
 
@@ -11,12 +12,13 @@ const COLORS = [
 ];
 
 export default function Inventory() {
-  const [inventory, setInventory] = useState([]);   // grouped by godown
-  const [summary,   setSummary]   = useState([]);   // grouped by category
+  const { t } = useTranslation();
+  const [inventory, setInventory] = useState([]);
+  const [summary,   setSummary]   = useState([]);
   const [godowns,   setGodowns]   = useState([]);
-  const [alerts,    setAlerts]    = useState(null);  // stock alerts (negative/zero)
+  const [alerts,    setAlerts]    = useState(null);
   const [loading,   setLoading]   = useState(true);
-  const [view,      setView]      = useState('godown');   // 'godown' | 'category' | 'alerts'
+  const [view,      setView]      = useState('godown');
   const [filterGodown, setFilterGodown] = useState('');
 
   useEffect(() => { fetchData(); }, []);
@@ -34,7 +36,7 @@ export default function Inventory() {
       setGodowns(gd.data?.godowns || gd.data || []);
       setAlerts(al.data);
     } catch {
-      toast.error('Failed to load inventory');
+      toast.error(t('inventory.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -50,12 +52,10 @@ export default function Inventory() {
 
   const totalStock = summary.reduce((s, r) => s + r.totalWeight, 0);
 
-  // filtered godown list
   const displayInventory = filterGodown
     ? inventory.filter(g => g.godown._id === filterGodown)
     : inventory;
 
-  // Build category → [{ godownName, weight }] map for the "By Category" view
   const catMap = {};
   inventory.forEach(g => {
     g.items.forEach(item => {
@@ -69,21 +69,21 @@ export default function Inventory() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('inventory.title')}</h1>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="bg-indigo-50 rounded-lg p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs font-medium text-indigo-600">Total Stock</p>
+          <p className="text-xs font-medium text-indigo-600">{t('inventory.totalStock')}</p>
           <p className="text-xl font-bold text-indigo-900 mt-1">{fmtW(totalStock)}</p>
-          <p className="text-xs text-indigo-400">{inventory.length} godown(s)</p>
+          <p className="text-xs text-indigo-400">{t('inventory.godownCount', { n: inventory.length })}</p>
         </div>
         {summary.slice(0, 4).map((s, i) => (
           <div key={s.category} className="bg-white rounded-lg shadow p-4">
             <div className={`w-2 h-2 rounded-full ${COLORS[i % COLORS.length]} mb-2`}></div>
             <p className="text-xs font-medium text-gray-500 truncate">{s.category}</p>
             <p className="text-lg font-bold text-gray-900 mt-0.5">{Number(s.totalWeight).toLocaleString()} {s.unit}</p>
-            <p className="text-xs text-gray-400">{pct(s.totalWeight, totalStock)}% of total</p>
+            <p className="text-xs text-gray-400">{pct(s.totalWeight, totalStock)}{t('inventory.percentOfTotal')}</p>
           </div>
         ))}
       </div>
@@ -91,7 +91,7 @@ export default function Inventory() {
       {/* Godown Distribution Bar */}
       {inventory.length > 1 && (
         <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Godown Distribution</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-3">{t('inventory.godownDistribution')}</p>
           <div className="flex h-6 rounded-full overflow-hidden w-full">
             {inventory.map((g, i) => {
               const w = pct(g.totalWeight, totalStock);
@@ -123,19 +123,19 @@ export default function Inventory() {
             onClick={() => setView('godown')}
             className={`px-4 py-1.5 font-medium ${view === 'godown' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
           >
-            By Godown
+            {t('inventory.byGodown')}
           </button>
           <button
             onClick={() => setView('category')}
             className={`px-4 py-1.5 font-medium ${view === 'category' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
           >
-            By Category
+            {t('inventory.byCategory')}
           </button>
           <button
             onClick={() => setView('alerts')}
             className={`px-4 py-1.5 font-medium relative ${view === 'alerts' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
           >
-            Stock Alerts
+            {t('inventory.stockAlerts')}
             {alerts && alerts.overSold?.length > 0 && (
               <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {alerts.overSold.length}
@@ -150,18 +150,18 @@ export default function Inventory() {
             onChange={e => setFilterGodown(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
           >
-            <option value="">All Godowns</option>
+            <option value="">{t('inventory.allGodowns')}</option>
             {godowns.map(g => <option key={g._id} value={g._id}>{g.name}</option>)}
           </select>
         )}
       </div>
 
-      {/* ── BY GODOWN VIEW ── */}
+      {/* BY GODOWN VIEW */}
       {view === 'godown' && (
         <div className="space-y-4">
           {displayInventory.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              No stock data. Make purchases to see inventory.
+              {t('inventory.noStock')}
             </div>
           ) : displayInventory.map((g, gi) => (
             <div key={g.godown._id} className="bg-white rounded-lg shadow">
@@ -175,11 +175,10 @@ export default function Inventory() {
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-bold text-indigo-600">{fmtW(g.totalWeight)}</span>
-                  <p className="text-xs text-gray-400">{pct(g.totalWeight, totalStock)}% of total</p>
+                  <p className="text-xs text-gray-400">{pct(g.totalWeight, totalStock)}{t('inventory.percentOfTotal')}</p>
                 </div>
               </div>
 
-              {/* Mini progress bar per category inside godown */}
               <div className="px-4 pt-3 pb-1">
                 <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 w-full">
                   {g.items.map((item, ii) => (
@@ -201,7 +200,7 @@ export default function Inventory() {
                       <p className="text-xs font-medium text-gray-500 truncate">{item.category.name}</p>
                     </div>
                     <p className="text-lg font-bold text-gray-800">{Number(item.currentWeight).toLocaleString()} <span className="text-xs font-normal text-gray-400">{item.category.unit}</span></p>
-                    <p className="text-xs text-gray-400 mt-0.5">{pct(item.currentWeight, g.totalWeight)}% of godown</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{pct(item.currentWeight, g.totalWeight)}{t('inventory.percentOfGodown')}</p>
                   </div>
                 ))}
               </div>
@@ -210,11 +209,11 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* ── BY CATEGORY VIEW ── */}
+      {/* BY CATEGORY VIEW */}
       {view === 'category' && (
         <div className="space-y-3">
           {catList.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">No stock data.</div>
+            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">{t('inventory.noStockShort')}</div>
           ) : catList.map((cat, ci) => (
             <div key={cat.name} className="bg-white rounded-lg shadow">
               <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
@@ -222,10 +221,9 @@ export default function Inventory() {
                   <span className={`w-3 h-3 rounded-sm ${COLORS[ci % COLORS.length]}`}></span>
                   <h3 className="font-semibold text-gray-900">{cat.name}</h3>
                 </div>
-                <span className="text-sm font-bold text-indigo-600">{Number(cat.total).toLocaleString()} {cat.unit} total</span>
+                <span className="text-sm font-bold text-indigo-600">{t('inventory.totalUnit', { n: Number(cat.total).toLocaleString(), unit: cat.unit })}</span>
               </div>
 
-              {/* Distribution bar across godowns */}
               <div className="px-4 pt-3 pb-1">
                 <div className="flex h-3 rounded-full overflow-hidden bg-gray-100 w-full">
                   {cat.godowns.map((gd, gi) => (
@@ -247,7 +245,7 @@ export default function Inventory() {
                       <p className="text-xs font-medium text-gray-500 truncate">{gd.godownName}</p>
                     </div>
                     <p className="text-lg font-bold text-gray-800">{Number(gd.weight).toLocaleString()} <span className="text-xs font-normal text-gray-400">{cat.unit}</span></p>
-                    <p className="text-xs text-gray-400 mt-0.5">{pct(gd.weight, cat.total)}% of category</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{pct(gd.weight, cat.total)}{t('inventory.percentOfCategory')}</p>
                   </div>
                 ))}
               </div>
@@ -256,46 +254,44 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* ── STOCK ALERTS VIEW ── */}
+      {/* STOCK ALERTS VIEW */}
       {view === 'alerts' && alerts && (
         <div className="space-y-4">
           {(!alerts.overSold || alerts.overSold.length === 0) && (!alerts.zero || alerts.zero.length === 0) ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-green-600 font-medium text-lg">All Clear</p>
-              <p className="text-gray-500 text-sm mt-1">No over-sold or empty stock items found.</p>
+              <p className="text-green-600 font-medium text-lg">{t('inventory.allClear')}</p>
+              <p className="text-gray-500 text-sm mt-1">{t('inventory.noAlerts')}</p>
             </div>
           ) : (
             <>
-              {/* Summary banner */}
               {alerts.overSold?.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-800 font-semibold">
-                    {alerts.overSold.length} item(s) sold beyond available stock (sorting surplus)
+                    {t('inventory.overSoldCount', { n: alerts.overSold.length })}
                   </p>
                   <p className="text-red-600 text-sm mt-1">
-                    Total over-sold weight: {Number(alerts.totalOverSoldWeight).toLocaleString()} kg
+                    {t('inventory.overSoldWeight', { n: Number(alerts.totalOverSoldWeight).toLocaleString() })}
                   </p>
                   <p className="text-red-500 text-xs mt-2">
-                    Over-sold means more was sold in this category than was purchased &mdash; sorting converted material from another category into this one.
+                    {t('inventory.overSoldNote')}
                   </p>
                 </div>
               )}
 
-              {/* Over-sold stock table */}
               {alerts.overSold?.length > 0 && (
                 <div className="bg-white rounded-lg shadow">
                   <div className="px-4 py-3 border-b bg-red-50">
-                    <h3 className="font-semibold text-red-800">Over-Sold Stock (Sorting Surplus)</h3>
+                    <h3 className="font-semibold text-red-800">{t('inventory.overSoldStock')}</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Godown</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Current Stock</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Over-Sold</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('inventory.godown')}</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('inventory.category')}</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('inventory.currentStock')}</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('inventory.overSold')}</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('common.status')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -310,7 +306,7 @@ export default function Inventory() {
                               +{Number(a.overSold).toLocaleString()} {a.category?.unit}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Sorting Surplus</span>
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">{t('inventory.sortingSurplus')}</span>
                             </td>
                           </tr>
                         ))}
@@ -320,20 +316,19 @@ export default function Inventory() {
                 </div>
               )}
 
-              {/* Zero stock table */}
               {alerts.zero?.length > 0 && (
                 <div className="bg-white rounded-lg shadow">
                   <div className="px-4 py-3 border-b bg-amber-50">
-                    <h3 className="font-semibold text-amber-800">Zero Stock (Empty)</h3>
+                    <h3 className="font-semibold text-amber-800">{t('inventory.zeroStock')}</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Godown</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Stock</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('inventory.godown')}</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('inventory.category')}</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('inventory.stock')}</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('common.status')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -343,7 +338,7 @@ export default function Inventory() {
                             <td className="px-4 py-3 text-gray-700">{a.category?.name}</td>
                             <td className="px-4 py-3 text-right font-bold text-amber-600">0 {a.category?.unit}</td>
                             <td className="px-4 py-3">
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Empty</span>
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">{t('inventory.empty')}</span>
                             </td>
                           </tr>
                         ))}

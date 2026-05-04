@@ -19,6 +19,7 @@ import Ledger from './pages/Ledger.jsx';
 import Settings from './pages/Settings.jsx';
 import Users from './pages/Users.jsx';
 import AuditLog from './pages/AuditLog.jsx';
+import Import from './pages/Import.jsx';
 
 export default function App() {
   const { loading } = useAuth();
@@ -58,6 +59,7 @@ export default function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/audit-log" element={<AuditLog />} />
+                <Route path="/import" element={<Import />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

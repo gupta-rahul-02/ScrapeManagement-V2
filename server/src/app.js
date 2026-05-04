@@ -31,6 +31,7 @@ import expenseRoutes from './routes/expenses.js';
 import accountBalanceRoutes from './routes/accountBalances.js';
 import userRoutes from './routes/users.js';
 import auditLogRoutes from './routes/auditLogs.js';
+import importRoutes from './routes/import.js';
 
 const app = express();
 
@@ -85,6 +86,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/account-balances', accountBalanceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/import', importRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

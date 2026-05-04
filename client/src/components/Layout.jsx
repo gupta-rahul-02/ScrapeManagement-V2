@@ -28,6 +28,7 @@ import {
   Cog6ToothIcon,
   UsersIcon,
   ClipboardDocumentCheckIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -47,6 +48,7 @@ const navigation = [
   { key: 'settings',  href: '/settings',   icon: Cog6ToothIcon,                  roles: ['owner'] },
   { key: 'users',     href: '/users',      icon: UsersIcon,                       roles: ['owner'] },
   { key: 'auditLog',  href: '/audit-log',  icon: ClipboardDocumentCheckIcon,      roles: ['owner'] },
+  { key: 'import',    href: '/import',     icon: ArrowUpTrayIcon,                 roles: ['owner'] },
 ];
 
 export default function Layout({ children }) {

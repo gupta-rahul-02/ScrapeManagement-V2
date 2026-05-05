@@ -477,6 +477,16 @@
     "totalEntries": "{{n}} total entries",
     "pageInfo": "Page {{page}} of {{pages}} ({{total}} entries)"
   },
+  "ocr": {
+    "banner": "AI Weight Slip Scanner",
+    "bannerHint": "Upload a photo of the weight slip to auto-fill the form",
+    "scanButton": "Scan Slip",
+    "scanning": "Scanning...",
+    "success": "Form pre-filled from weight slip — please verify",
+    "failed": "Could not read the slip — try a clearer photo",
+    "unmatched": "These names were not found in the system:",
+    "invalidFile": "Please select an image file"
+  },
   "pwa": {
     "offline": "You are offline — changes will be saved and synced when back online",
     "online": "Back online",

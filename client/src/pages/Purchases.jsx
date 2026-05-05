@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import Modal from '../components/Modal.jsx';
 import toast from 'react-hot-toast';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CameraIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 export default function Purchases() {
   const { t } = useTranslation();
@@ -14,6 +14,9 @@ export default function Purchases() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ vendor: '', startDate: '', endDate: '' });
+  const [scanning, setScanning] = useState(false);
+  const [scanThumb, setScanThumb] = useState(null);
+  const scanInputRef = useRef(null);
 
   const [form, setForm] = useState({
     vendor: '', godown: '', items: [{ category: '', weight: '', rate: '', amount: 0 }],
@@ -72,6 +75,82 @@ export default function Purchases() {
   const totalWeight = form.items.reduce((sum, i) => sum + (Number(i.weight) || 0), 0);
   const totalAmount = form.items.reduce((sum, i) => sum + (i.amount || 0), 0);
 
+  // ─── AI Scan Weight Slip ───────────────────────────────────────────
+  const handleScan = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('ocr.invalidFile'));
+      return;
+    }
+    setScanning(true);
+    setScanThumb(URL.createObjectURL(file));
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const { data } = await api.post('/ocr/weight-slip', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const unmatched = [];
+      const next = { ...form };
+
+      // Vendor: case-insensitive name match
+      if (data.vendorName) {
+        const v = vendors.find(
+          (x) => x.name.toLowerCase().trim() === data.vendorName.toLowerCase().trim()
+        );
+        if (v) next.vendor = v._id;
+        else unmatched.push(`${t('purchases.vendor')}: "${data.vendorName}"`);
+      }
+
+      // Date
+      if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+        next.date = data.date;
+      }
+
+      // Items: match category by name
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        const mappedItems = data.items.map((item) => {
+          const cat = categories.find(
+            (c) =>
+              item.categoryName &&
+              c.name.toLowerCase().trim() === item.categoryName.toLowerCase().trim()
+          );
+          if (!cat && item.categoryName) {
+            unmatched.push(`${t('common.category')}: "${item.categoryName}"`);
+          }
+          const weight = Number(item.weight) || 0;
+          const rate = Number(item.rate) || 0;
+          return {
+            category: cat?._id || '',
+            weight: weight ? String(weight) : '',
+            rate: rate ? String(rate) : '',
+            amount: weight * rate,
+          };
+        });
+        next.items = mappedItems;
+      }
+
+      // Notes
+      if (data.notes) next.notes = data.notes;
+
+      setForm(next);
+      toast.success(t('ocr.success'));
+      if (unmatched.length > 0) {
+        toast(`${t('ocr.unmatched')}\n\n${unmatched.join('\n')}`, {
+          icon: '⚠️',
+          duration: 6000,
+        });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || t('ocr.failed'));
+      setScanThumb(null);
+    } finally {
+      setScanning(false);
+      if (scanInputRef.current) scanInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -87,6 +166,7 @@ export default function Purchases() {
       await api.post('/purchases', payload);
       toast.success(t('purchases.recorded'));
       setModalOpen(false);
+      setScanThumb(null);
       setForm({ vendor: '', godown: '', items: [{ category: '', weight: '', rate: '', amount: 0 }], notes: '', date: new Date().toISOString().split('T')[0] });
       fetchPurchases();
     } catch (err) {
@@ -153,7 +233,40 @@ export default function Purchases() {
       </div>
 
       {/* New Purchase Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={t('purchases.new')} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setScanThumb(null); }} title={t('purchases.new')} size="lg">
+        {/* AI Scan banner */}
+        <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <SparklesIcon className="h-6 w-6 text-indigo-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-indigo-900">{t('ocr.banner')}</p>
+              <p className="text-xs text-indigo-700">{t('ocr.bannerHint')}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {scanThumb && (
+              <img src={scanThumb} alt="slip" className="h-10 w-10 rounded object-cover border border-indigo-300" />
+            )}
+            <button
+              type="button"
+              onClick={() => scanInputRef.current?.click()}
+              disabled={scanning}
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+            >
+              <CameraIcon className="h-4 w-4" />
+              {scanning ? t('ocr.scanning') : t('ocr.scanButton')}
+            </button>
+            <input
+              ref={scanInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => handleScan(e.target.files?.[0])}
+            />
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>

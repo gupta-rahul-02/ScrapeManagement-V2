@@ -32,6 +32,7 @@ import accountBalanceRoutes from './routes/accountBalances.js';
 import userRoutes from './routes/users.js';
 import auditLogRoutes from './routes/auditLogs.js';
 import importRoutes from './routes/import.js';
+import ocrRoutes from './routes/ocr.js';
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/account-balances', accountBalanceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

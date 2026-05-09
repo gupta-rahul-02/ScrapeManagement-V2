@@ -13,6 +13,7 @@ export default function Purchases() {
   const [categories, setCategories] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ vendor: '', startDate: '', endDate: '' });
   const [scanning, setScanning] = useState(false);
   const [scanThumb, setScanThumb] = useState(null);
@@ -153,6 +154,8 @@ export default function Purchases() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       const payload = {
         vendor: form.vendor,
@@ -171,6 +174,8 @@ export default function Purchases() {
       fetchPurchases();
     } catch (err) {
       toast.error(err.response?.data?.message || t('purchases.createError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -344,7 +349,7 @@ export default function Purchases() {
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{t('purchases.save')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('purchases.save')}</button>
           </div>
         </form>
       </Modal>

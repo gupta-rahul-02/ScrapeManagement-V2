@@ -15,6 +15,7 @@ export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filters, setFilters] = useState({ category: '', mode: '', startDate: '', endDate: '' });
 
@@ -67,6 +68,8 @@ export default function Expenses() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await api.post('/expenses', { ...form, amount: Number(form.amount) });
       toast.success(t('expenses.recorded'));
@@ -75,6 +78,8 @@ export default function Expenses() {
       fetchExpenses();
     } catch (err) {
       toast.error(err.response?.data?.message || t('expenses.recordError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -91,6 +96,8 @@ export default function Expenses() {
 
   const handleCatSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (editingCat) {
         await api.put(`/expense-categories/${editingCat._id}`, catForm);
@@ -103,6 +110,8 @@ export default function Expenses() {
       fetchCategories();
     } catch (err) {
       toast.error(err.response?.data?.message || t('expenses.categorySaveError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -367,7 +376,7 @@ export default function Expenses() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700">{t('expenses.recordExpense')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('expenses.recordExpense')}</button>
           </div>
         </form>
       </Modal>
@@ -388,8 +397,8 @@ export default function Expenses() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setCatModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700">
-              {editingCat ? t('common.update') : t('common.create')}
+            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? t('common.saving') : editingCat ? t('common.update') : t('common.create')}
             </button>
           </div>
         </form>

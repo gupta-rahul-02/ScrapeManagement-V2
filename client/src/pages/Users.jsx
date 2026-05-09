@@ -14,6 +14,7 @@ export default function Users() {
   const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -51,6 +52,8 @@ export default function Users() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (editingUser) {
         await api.put(`/users/${editingUser._id}`, {
@@ -62,6 +65,7 @@ export default function Users() {
       } else {
         if (!form.password || form.password.length < 6) {
           toast.error(t('users.passwordTooShort'));
+          setSubmitting(false);
           return;
         }
         await api.post('/users', form);
@@ -71,6 +75,8 @@ export default function Users() {
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.message || t('users.saveError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -86,6 +92,8 @@ export default function Users() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await api.put(`/users/${pwUserId}/reset-password`, { password: newPassword });
       toast.success(t('users.passwordReset'));
@@ -93,6 +101,8 @@ export default function Users() {
       setNewPassword('');
     } catch (err) {
       toast.error(err.response?.data?.message || t('users.passwordResetError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -232,8 +242,8 @@ export default function Users() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700">
-              {editingUser ? t('common.update') : t('users.createUser')}
+            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? t('common.saving') : editingUser ? t('common.update') : t('users.createUser')}
             </button>
           </div>
         </form>
@@ -256,7 +266,7 @@ export default function Users() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setPwModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700">{t('users.resetPassword')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('users.resetPassword')}</button>
           </div>
         </form>
       </Modal>

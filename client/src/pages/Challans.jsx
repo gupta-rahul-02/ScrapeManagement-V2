@@ -8,6 +8,7 @@ export default function Challans() {
   const { t } = useTranslation();
   const [challans, setChallans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ status: '' });
   const [deliveryModal, setDeliveryModal] = useState(null);
   const [receiverWeight, setReceiverWeight] = useState('');
@@ -29,6 +30,8 @@ export default function Challans() {
 
   const handleDelivery = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await api.put(`/challans/${deliveryModal._id}/delivery`, {
         receiverWeight: Number(receiverWeight),
@@ -39,6 +42,8 @@ export default function Challans() {
       fetchChallans();
     } catch (err) {
       toast.error(err.response?.data?.message || t('challans.updateError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,7 +148,7 @@ export default function Challans() {
             </div>
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => setDeliveryModal(null)} className="px-4 py-2 text-sm border rounded-lg">{t('common.cancel')}</button>
-              <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{t('challans.confirmDelivery')}</button>
+              <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('challans.confirmDelivery')}</button>
             </div>
           </form>
         )}

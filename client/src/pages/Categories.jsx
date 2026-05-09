@@ -10,6 +10,7 @@ export default function Categories() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', unit: 'kg', description: '' });
@@ -29,6 +30,8 @@ export default function Categories() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (editing) {
         await api.put(`/categories/${editing._id}`, form);
@@ -43,6 +46,8 @@ export default function Categories() {
       fetchCategories();
     } catch (err) {
       toast.error(err.response?.data?.message || t('categories.saveError'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -126,8 +131,8 @@ export default function Categories() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
-            <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-              {editing ? t('common.update') : t('common.create')}
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? t('common.saving') : editing ? t('common.update') : t('common.create')}
             </button>
           </div>
         </form>

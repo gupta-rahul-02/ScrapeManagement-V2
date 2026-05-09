@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <title>तोल पर्ची - नमूना</title>
+  <style>
+    body { font-family: 'Noto Sans Devanagari', 'Mangal', sans-serif; background: #f5f5dc; padding: 40px; }
+    .slip {
+      width: 420px; margin: 0 auto; background: #fff;
+      border: 2px solid #333; padding: 24px; position: relative;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+    }
+    .slip::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 6px; background: repeating-linear-gradient(90deg, #d32f2f, #d32f2f 20px, #fff 20px, #fff 24px);
+    }
+    h2 { text-align: center; margin: 8px 0 4px; font-size: 20px; }
+    .subtitle { text-align: center; font-size: 12px; color: #555; margin-bottom: 16px; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px; }
+    .row .label { font-weight: bold; color: #333; }
+    .row .value { color: #111; }
+    hr { border: none; border-top: 1px dashed #999; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+    th { background: #eee; border: 1px solid #999; padding: 6px; text-align: left; }
+    td { border: 1px solid #ccc; padding: 6px; }
+    .total-row td { font-weight: bold; background: #f9f9f9; }
+    .stamp { text-align: center; margin-top: 16px; font-size: 11px; color: #888; }
+    .sign { margin-top: 30px; display: flex; justify-content: space-between; font-size: 12px; }
+    .sign div { border-top: 1px solid #333; padding-top: 4px; width: 130px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="slip">
+    <h2>तोल पर्ची</h2>
+    <p class="subtitle">श्री बालाजी वेट ब्रिज, फरीदाबाद</p>
+
+    <hr>
+
+    <div class="row"><span class="label">पर्ची नं:</span><span class="value">४५८७</span></div>
+    <div class="row"><span class="label">दिनांक:</span><span class="value">१८/०४/२०२५</span></div>
+    <div class="row"><span class="label">पार्टी का नाम:</span><span class="value">रमेश कुमार</span></div>
+    <div class="row"><span class="label">वाहन संख्या:</span><span class="value">एचआर-५५-सीडी-५६७८</span></div>
+
+    <hr>
+
+    <table>
+      <thead>
+        <tr>
+          <th>माल का नाम</th>
+          <th>वजन (किलो)</th>
+          <th>दर ₹/किलो</th>
+          <th>राशि ₹</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>लोहा स्क्रैप</td>
+          <td>५२०</td>
+          <td>२६</td>
+          <td>१३,५२०</td>
+        </tr>
+        <tr>
+          <td>तांबा तार</td>
+          <td>८५</td>
+          <td>४८०</td>
+          <td>४०,८००</td>
+        </tr>
+        <tr>
+          <td>पीतल मिश्रित</td>
+          <td>१२०</td>
+          <td>३५०</td>
+          <td>४२,०००</td>
+        </tr>
+        <tr class="total-row">
+          <td>कुल योग</td>
+          <td>७२५</td>
+          <td>—</td>
+          <td>९६,३२०</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <hr>
+
+    <div class="row"><span class="label">टिप्पणी:</span><span class="value">सुबह का माल, मिश्रित ग्रेड</span></div>
+
+    <div class="sign">
+      <div>पार्टी हस्ताक्षर</div>
+      <div>तोल कर्ता</div>
+    </div>
+
+    <p class="stamp">— यह कंप्यूटर जनित पर्ची है —</p>
+  </div>
+
+  <p style="text-align:center; margin-top:20px; font-size:12px; color:#666;">
+    ब्राउज़र में खोलें → स्क्रीनशॉट लें या PDF प्रिंट करें → OCR परीक्षण के लिए उपयोग करें<br>
+    अपेक्षित: पार्टी="रमेश कुमार", दिनांक="2025-04-18", माल: लोहा स्क्रैप 520kg @26, तांबा तार 85kg @480, पीतल मिश्रित 120kg @350
+  </p>
+</body>
+</html>

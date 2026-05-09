@@ -1,10 +1,13 @@
 // AI-powered weight slip OCR using Groq Llama Vision (free tier).
 // Sends an image to Groq and parses out structured purchase data.
 
+import sharp from 'sharp';
+
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 const PROMPT = `You are an OCR assistant for a scrap-metal trading business in India.
+The weight slip may be in Hindi, English, or a mix of both. Read carefully.
 Extract data from this weight slip / receipt image and respond with ONLY a JSON object (no markdown, no commentary) in exactly this shape:
 
 {
@@ -17,13 +20,30 @@ Extract data from this weight slip / receipt image and respond with ONLY a JSON 
 }
 
 Rules:
-- vendorName: the seller / supplier / party name on the slip (NOT the buyer)
-- date: convert any date format to YYYY-MM-DD; null if not visible
-- items: one entry per scrap category (e.g., "Iron Scrap", "Copper Wire", "Aluminium")
-- weight: numeric kg only — convert tons/quintals to kg (1 ton = 1000 kg, 1 quintal = 100 kg)
-- rate: numeric ₹ per kg — if rate is per ton or per quintal, convert to per kg
-- notes: any extra info like vehicle number or remarks; null if none
-- If a field is unreadable or absent, use null (not empty string)
+- vendorName: the seller / supplier / party who is SELLING the scrap. This is the person bringing material to the yard.
+  - On Hindi slips, look for labels like: पार्टी, नाम, विक्रेता, से, बेचने वाला, सप्लायर, पार्टी का नाम, श्री/श्रीमती
+  - It is usually a handwritten person's name (NOT the printed business/shop name at the top).
+  - The large printed header/title on the slip is typically the BUYER's business — IGNORE that as vendor.
+  - If in Hindi script (e.g. "राम कुमार", "सुरेश यादव"), transliterate to English (e.g. "Ram Kumar", "Suresh Yadav").
+  - If you see both a printed firm name and a handwritten name, use the handwritten name as vendor.
+- date: convert any date format to YYYY-MM-DD. Hindi dates like "१०/०५/२०२६" or "10 मई 2026" must be converted. null if not visible.
+- items: one entry per scrap category.
+  - categoryName: ALWAYS output in English. Common Hindi → English mappings:
+    - तांबा / ताम्बा = Copper Wire
+    - लोहा / सरिया / छड़ = Iron Scrap
+    - एल्युमिनियम / एलुमिनियम = Aluminium
+    - पीतल / पित्तल = Brass
+    - स्टील / स्टेनलेस = Stainless Steel
+    - जस्ता / जिंक = Zinc
+    - सीसा / लेड = Lead
+    - बैटरी = Battery
+    - रद्दी / कागज = Paper / Raddi
+    - प्लास्टिक = Plastic
+    - If the Hindi name doesn't match above, transliterate it to English.
+- weight: numeric kg only — convert tons/quintals to kg (1 ton = 1000 kg, 1 quintal = 100 kg). Hindi numerals (१२३) must be converted to Arabic (123).
+- rate: numeric ₹ per kg — if rate is per ton or per quintal, convert to per kg.
+- notes: any extra info like vehicle number (गाड़ी नंबर), remarks, or token number; null if none. Transliterate Hindi to English.
+- If a field is unreadable or absent, use null (not empty string).
 - Output ONLY the JSON. No backticks. No "Here is..." prefix.`;
 
 export const scanWeightSlip = async (req, res, next) => {
@@ -42,6 +62,18 @@ export const scanWeightSlip = async (req, res, next) => {
     const base64Image = req.file.buffer.toString('base64');
     const mimeType = req.file.mimetype || 'image/jpeg';
 
+    // Resize large images to stay within Groq API payload limits (~4MB base64)
+    let finalBase64 = base64Image;
+    let finalMime = mimeType;
+    if (req.file.buffer.length > 2 * 1024 * 1024) {
+      const resized = await sharp(req.file.buffer)
+        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 75 })
+        .toBuffer();
+      finalBase64 = resized.toString('base64');
+      finalMime = 'image/jpeg';
+    }
+
     const groqResponse = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {
@@ -58,7 +90,7 @@ export const scanWeightSlip = async (req, res, next) => {
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:${mimeType};base64,${base64Image}`,
+                  url: `data:${finalMime};base64,${finalBase64}`,
                 },
               },
             ],

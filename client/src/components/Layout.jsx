@@ -103,8 +103,8 @@ export default function Layout({ children }) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          <div className="flex items-center justify-between px-6 py-5 border-b dark:border-slate-700">
+        <div className="flex flex-col flex-grow overflow-hidden border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b dark:border-slate-700">
             <h1 className="text-xl font-bold text-indigo-600">{t('nav.appName')}</h1>
             <div className="flex items-center gap-1">
               <PendingSyncBadge />
@@ -140,7 +140,7 @@ export default function Layout({ children }) {
               </Link>
             ))}
           </nav>
-          <div className="border-t dark:border-slate-700 px-4 py-4">
+          <div className="flex-shrink-0 border-t dark:border-slate-700 px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{user?.name}</p>

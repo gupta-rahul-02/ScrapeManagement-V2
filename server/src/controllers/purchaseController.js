@@ -185,3 +185,135 @@ export const createPurchase = async (req, res, next) => {
     session.endSession();
   }
 };
+
+export const updatePurchase = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { vendor, godown, items, totalWeight, totalAmount, notes, date } = req.body;
+
+    const oldPurchase = await Purchase.findById(req.params.id).session(session);
+    if (!oldPurchase) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Purchase not found' });
+    }
+
+    const oldVendor = oldPurchase.vendor.toString();
+    const oldGodown = oldPurchase.godown.toString();
+
+    // 1. Reverse old godown stock
+    for (const item of oldPurchase.items) {
+      await GodownStock.findOneAndUpdate(
+        { godown: oldGodown, category: item.category },
+        { $inc: { currentWeight: -item.weight }, $set: { lastUpdated: new Date() } },
+        { session }
+      );
+    }
+
+    // 2. Reverse old vendor balance
+    await Vendor.findByIdAndUpdate(
+      oldVendor,
+      { $inc: { currentBalance: -oldPurchase.totalAmount } },
+      { session }
+    );
+
+    // 3. Delete old ledger entries
+    await LedgerEntry.deleteMany({ refModel: 'Purchase', refId: oldPurchase._id }, { session });
+
+    // 4. Update the purchase document
+    oldPurchase.vendor = vendor;
+    oldPurchase.godown = godown;
+    oldPurchase.items = items;
+    oldPurchase.totalWeight = totalWeight;
+    oldPurchase.totalAmount = totalAmount;
+    oldPurchase.notes = notes;
+    oldPurchase.date = date || oldPurchase.date;
+    await oldPurchase.save({ session });
+
+    // 5. Apply new godown stock
+    for (const item of items) {
+      await GodownStock.findOneAndUpdate(
+        { godown, category: item.category },
+        { $inc: { currentWeight: item.weight }, $set: { lastUpdated: new Date() } },
+        { upsert: true, session }
+      );
+    }
+
+    // 6. Apply new vendor balance
+    await Vendor.findByIdAndUpdate(
+      vendor,
+      { $inc: { currentBalance: totalAmount } },
+      { session }
+    );
+
+    // 7. Create new ledger entries
+    const txId = randomUUID();
+    const lastVendorEntry = await LedgerEntry.findOne({
+      accountType: 'Vendor', accountId: vendor,
+    }).sort({ date: -1, createdAt: -1 }).session(session);
+
+    const vendorDoc = await Vendor.findById(vendor).select('openingBalance').lean().session(session);
+    const prevVendorBalance = lastVendorEntry
+      ? lastVendorEntry.runningBalance
+      : (vendorDoc?.openingBalance || 0);
+
+    await LedgerEntry.create(
+      [
+        {
+          transactionId: txId,
+          accountType: 'Purchases',
+          accountId: null,
+          entryType: 'purchase',
+          refModel: 'Purchase',
+          refId: oldPurchase._id,
+          debit: totalAmount,
+          credit: 0,
+          runningBalance: 0,
+          description: `Purchase from vendor - ${totalWeight} kg`,
+          date: date || new Date(),
+          createdBy: req.user._id,
+        },
+        {
+          transactionId: txId,
+          accountType: 'Vendor',
+          accountId: vendor,
+          entryType: 'purchase',
+          refModel: 'Purchase',
+          refId: oldPurchase._id,
+          debit: 0,
+          credit: totalAmount,
+          runningBalance: prevVendorBalance + totalAmount,
+          description: `Purchase - ${totalWeight} kg`,
+          date: date || new Date(),
+          createdBy: req.user._id,
+        },
+      ],
+      { session, ordered: true }
+    );
+
+    await session.commitTransaction();
+
+    const populatedPurchase = await Purchase.findById(oldPurchase._id)
+      .populate('vendor', 'name phone')
+      .populate('godown', 'name')
+      .populate('items.category', 'name unit');
+
+    logAudit({
+      req,
+      action: 'update',
+      module: 'Purchase',
+      entityId: oldPurchase._id,
+      description: `Updated purchase — ₹${totalAmount}, ${totalWeight} kg`,
+      metadata: { totalAmount, totalWeight, vendor, godown, items: items.length },
+    });
+
+    res.json(populatedPurchase);
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};

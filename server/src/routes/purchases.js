@@ -3,6 +3,7 @@ import {
   getPurchases,
   getPurchase,
   createPurchase,
+  updatePurchase,
 } from '../controllers/purchaseController.js';
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
@@ -16,6 +17,7 @@ router.route('/')
   .post(upload.single('weightSlipPhoto'), createPurchase);
 
 router.route('/:id')
-  .get(getPurchase);
+  .get(getPurchase)
+  .put(updatePurchase);
 
 export default router;

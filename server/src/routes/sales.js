@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSales, getSale, createSale } from '../controllers/saleController.js';
+import { getSales, getSale, createSale, updateSale } from '../controllers/saleController.js';
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 
@@ -12,6 +12,7 @@ router.route('/')
   .post(upload.single('weightSlipPhoto'), createSale);
 
 router.route('/:id')
-  .get(getSale);
+  .get(getSale)
+  .put(updateSale);
 
 export default router;

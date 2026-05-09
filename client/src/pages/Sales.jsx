@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import Modal from '../components/Modal.jsx';
 import toast from 'react-hot-toast';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 export default function Sales() {
   const { t } = useTranslation();
@@ -13,6 +13,7 @@ export default function Sales() {
   const [categories, setCategories] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ buyer: '', startDate: '', endDate: '' });
@@ -91,9 +92,15 @@ export default function Sales() {
         notes: form.notes,
         date: form.date,
       };
-      await api.post('/sales', payload);
-      toast.success(t('sales.recorded'));
+      if (editing) {
+        await api.put(`/sales/${editing._id}`, payload);
+        toast.success(t('sales.updated'));
+      } else {
+        await api.post('/sales', payload);
+        toast.success(t('sales.recorded'));
+      }
       setModalOpen(false);
+      setEditing(null);
       setForm({ buyer: '', godown: '', truck: '', items: [{ category: '', weight: '', rate: '', amount: 0 }], notes: '', date: new Date().toISOString().split('T')[0] });
       fetchSales();
     } catch (err) {
@@ -103,12 +110,30 @@ export default function Sales() {
     }
   };
 
+  const handleEdit = (sale) => {
+    setEditing(sale);
+    setForm({
+      buyer: sale.buyer?._id || '',
+      godown: sale.godown?._id || '',
+      truck: sale.truck?._id || sale.truck || '',
+      items: sale.items.map((i) => ({
+        category: i.category?._id || i.category,
+        weight: String(i.weight),
+        rate: String(i.rate),
+        amount: i.amount,
+      })),
+      notes: sale.notes || '',
+      date: new Date(sale.date).toISOString().split('T')[0],
+    });
+    setModalOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('sales.title')}</h1>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => { setEditing(null); setForm({ buyer: '', godown: '', truck: '', items: [{ category: '', weight: '', rate: '', amount: 0 }], notes: '', date: new Date().toISOString().split('T')[0] }); setModalOpen(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
           <PlusIcon className="h-4 w-4" /> {t('sales.new')}
@@ -140,11 +165,12 @@ export default function Sales() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('sales.items')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('sales.weight')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.amount')}</th>
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {sales.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">{t('sales.noResults')}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">{t('sales.noResults')}</td></tr>
             ) : (
               sales.map((s) => (
                 <tr key={s._id} className="hover:bg-gray-50">
@@ -154,6 +180,11 @@ export default function Sales() {
                   <td className="px-4 py-3 text-sm">{s.items?.map((i) => i.category?.name).join(', ')}</td>
                   <td className="px-4 py-3 text-sm">{s.totalWeight} kg</td>
                   <td className="px-4 py-3 text-sm font-medium">₹{s.totalAmount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <button onClick={() => handleEdit(s)} className="text-indigo-600 hover:text-indigo-800">
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -162,7 +193,7 @@ export default function Sales() {
       </div>
 
       {/* New Sale Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={t('sales.new')} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditing(null); }} title={editing ? t('sales.edit') : t('sales.new')} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -247,7 +278,7 @@ export default function Sales() {
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('sales.save')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : editing ? t('common.update') : t('sales.save')}</button>
           </div>
         </form>
       </Modal>

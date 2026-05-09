@@ -29,6 +29,7 @@ import {
   UsersIcon,
   ClipboardDocumentCheckIcon,
   ArrowUpTrayIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -49,6 +50,7 @@ const navigation = [
   { key: 'users',     href: '/users',      icon: UsersIcon,                       roles: ['owner'] },
   { key: 'auditLog',  href: '/audit-log',  icon: ClipboardDocumentCheckIcon,      roles: ['owner'] },
   { key: 'import',    href: '/import',     icon: ArrowUpTrayIcon,                 roles: ['owner'] },
+  { key: 'backup',    href: '/backup',     icon: CloudArrowUpIcon,                roles: ['owner'] },
 ];
 
 export default function Layout({ children }) {

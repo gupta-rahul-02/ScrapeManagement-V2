@@ -239,3 +239,194 @@ export const createSale = async (req, res, next) => {
     session.endSession();
   }
 };
+
+export const updateSale = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { buyer, godown, items, totalWeight, totalAmount, truck, notes, date } = req.body;
+
+    const oldSale = await Sale.findById(req.params.id).session(session);
+    if (!oldSale) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    // Block editing if challan is already delivered
+    const existingChallan = await Challan.findOne({ sale: oldSale._id }).session(session);
+    if (existingChallan && existingChallan.status !== 'dispatched') {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: 'Cannot edit sale — challan is already delivered' });
+    }
+
+    const oldGodown = oldSale.godown.toString();
+    const oldBuyer = oldSale.buyer.toString();
+
+    // 1. Reverse old godown stock changes
+    for (const item of oldSale.items) {
+      const stock = await GodownStock.findOne({ godown: oldGodown, category: item.category }).session(session);
+      if (stock) {
+        stock.currentWeight += item.weight;
+        stock.lastUpdated = new Date();
+        await stock.save({ session });
+      }
+    }
+
+    // 2. Reverse old buyer balance & ledger (only if direct sale without truck)
+    if (!oldSale.truck) {
+      await Buyer.findByIdAndUpdate(
+        oldBuyer,
+        { $inc: { currentBalance: -oldSale.totalAmount } },
+        { session }
+      );
+    }
+
+    // 3. Delete old ledger entries
+    await LedgerEntry.deleteMany({ refModel: 'Sale', refId: oldSale._id }, { session });
+
+    // 4. Delete old challan if exists
+    if (existingChallan) {
+      await Challan.deleteOne({ _id: existingChallan._id }, { session });
+    }
+
+    // 5. Update the sale document
+    oldSale.buyer = buyer;
+    oldSale.godown = godown;
+    oldSale.items = items;
+    oldSale.totalWeight = totalWeight;
+    oldSale.totalAmount = totalAmount;
+    oldSale.truck = truck || undefined;
+    oldSale.notes = notes;
+    oldSale.date = date || oldSale.date;
+    await oldSale.save({ session });
+
+    // 6. Apply new godown stock deductions
+    for (const item of items) {
+      const stock = await GodownStock.findOne({ godown, category: item.category }).session(session);
+      const available = stock?.currentWeight || 0;
+      const excess = Math.max(0, item.weight - available);
+      const deduction = Math.min(item.weight, available);
+
+      if (stock) {
+        stock.currentWeight = available - deduction;
+        stock.overSold = (stock.overSold || 0) + excess;
+        stock.lastUpdated = new Date();
+        await stock.save({ session });
+      } else {
+        await GodownStock.create(
+          [{ godown, category: item.category, currentWeight: 0, overSold: item.weight, lastUpdated: new Date() }],
+          { session }
+        );
+      }
+    }
+
+    // 7. Handle buyer balance & ledger for direct sales (no truck)
+    if (!truck) {
+      await Buyer.findByIdAndUpdate(
+        buyer,
+        { $inc: { currentBalance: totalAmount } },
+        { session }
+      );
+
+      const txId = randomUUID();
+      const lastBuyerEntry = await LedgerEntry.findOne({
+        accountType: 'Buyer', accountId: buyer,
+      }).sort({ date: -1, createdAt: -1 }).session(session);
+
+      const buyerDoc = await Buyer.findById(buyer).select('openingBalance').lean().session(session);
+      const prevBuyerBalance = lastBuyerEntry
+        ? lastBuyerEntry.runningBalance
+        : (buyerDoc?.openingBalance || 0);
+
+      await LedgerEntry.create(
+        [
+          {
+            transactionId: txId,
+            accountType: 'Buyer',
+            accountId: buyer,
+            entryType: 'sale',
+            refModel: 'Sale',
+            refId: oldSale._id,
+            debit: totalAmount,
+            credit: 0,
+            runningBalance: prevBuyerBalance + totalAmount,
+            description: `Sale (direct) - ${totalWeight} kg`,
+            date: date || new Date(),
+            createdBy: req.user._id,
+          },
+          {
+            transactionId: txId,
+            accountType: 'Sales',
+            accountId: null,
+            entryType: 'sale',
+            refModel: 'Sale',
+            refId: oldSale._id,
+            debit: 0,
+            credit: totalAmount,
+            runningBalance: 0,
+            description: `Sale to buyer (direct) - ${totalWeight} kg`,
+            date: date || new Date(),
+            createdBy: req.user._id,
+          },
+        ],
+        { session, ordered: true }
+      );
+    }
+
+    // 8. Re-create challan if truck provided
+    if (truck) {
+      const lastChallan = await Challan.findOne().sort({ createdAt: -1 }).session(session);
+      const nextNum = lastChallan
+        ? parseInt(lastChallan.challanNo.replace('CH-', '')) + 1
+        : 1;
+      const challanNo = `CH-${String(nextNum).padStart(5, '0')}`;
+
+      await Challan.create(
+        [
+          {
+            challanNo,
+            sale: oldSale._id,
+            truck,
+            godown,
+            buyer,
+            items: items.map((i) => ({
+              category: i.category,
+              dispatchWeight: i.weight,
+            })),
+            senderWeight: totalWeight,
+            status: 'dispatched',
+            dispatchDate: date || new Date(),
+            createdBy: req.user._id,
+          },
+        ],
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+
+    const populatedSale = await Sale.findById(oldSale._id)
+      .populate('buyer', 'name phone')
+      .populate('godown', 'name')
+      .populate('items.category', 'name unit');
+
+    logAudit({
+      req,
+      action: 'update',
+      module: 'Sale',
+      entityId: oldSale._id,
+      description: `Updated sale — ₹${totalAmount}, ${totalWeight} kg`,
+      metadata: { totalAmount, totalWeight, buyer, godown, truck: truck || null, items: items.length },
+    });
+
+    res.json(populatedSale);
+  } catch (error) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};

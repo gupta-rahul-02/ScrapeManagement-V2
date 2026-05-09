@@ -9,6 +9,7 @@ const auditLogSchema = new mongoose.Schema(
         'create', 'update', 'deactivate', 'activate',
         'login', 'logout', 'register',
         'mark_delivered', 'reset_password',
+        'backup', 'restore',
       ],
     },
     module: {
@@ -17,7 +18,7 @@ const auditLogSchema = new mongoose.Schema(
       enum: [
         'Payment', 'Purchase', 'Sale', 'Challan', 'Expense',
         'Vendor', 'Buyer', 'Category', 'Godown', 'Truck',
-        'User', 'Settings', 'Auth',
+        'User', 'Settings', 'Auth', 'Backup',
       ],
     },
     entityId: {

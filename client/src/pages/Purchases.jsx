@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api.js';
 import Modal from '../components/Modal.jsx';
 import toast from 'react-hot-toast';
-import { PlusIcon, CameraIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CameraIcon, SparklesIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 export default function Purchases() {
   const { t } = useTranslation();
@@ -12,6 +12,7 @@ export default function Purchases() {
   const [godowns, setGodowns] = useState([]);
   const [categories, setCategories] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ vendor: '', startDate: '', endDate: '' });
@@ -179,9 +180,15 @@ export default function Purchases() {
         notes: form.notes,
         date: form.date,
       };
-      await api.post('/purchases', payload);
-      toast.success(t('purchases.recorded'));
+      if (editing) {
+        await api.put(`/purchases/${editing._id}`, payload);
+        toast.success(t('purchases.updated'));
+      } else {
+        await api.post('/purchases', payload);
+        toast.success(t('purchases.recorded'));
+      }
       setModalOpen(false);
+      setEditing(null);
       setScanThumb(null);
       setForm({ vendor: '', godown: '', items: [{ category: '', weight: '', rate: '', amount: 0 }], notes: '', date: new Date().toISOString().split('T')[0] });
       fetchPurchases();
@@ -192,12 +199,30 @@ export default function Purchases() {
     }
   };
 
+  const handleEdit = (purchase) => {
+    setEditing(purchase);
+    setForm({
+      vendor: purchase.vendor?._id || '',
+      godown: purchase.godown?._id || '',
+      items: purchase.items.map((i) => ({
+        category: i.category?._id || i.category,
+        weight: String(i.weight),
+        rate: String(i.rate),
+        amount: i.amount,
+      })),
+      notes: purchase.notes || '',
+      date: new Date(purchase.date).toISOString().split('T')[0],
+    });
+    setScanThumb(null);
+    setModalOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('purchases.title')}</h1>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => { setEditing(null); setForm({ vendor: '', godown: '', items: [{ category: '', weight: '', rate: '', amount: 0 }], notes: '', date: new Date().toISOString().split('T')[0] }); setModalOpen(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
           <PlusIcon className="h-4 w-4" /> {t('purchases.new')}
@@ -229,11 +254,12 @@ export default function Purchases() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('purchases.items')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('purchases.weight')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.amount')}</th>
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {purchases.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">{t('purchases.noResults')}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">{t('purchases.noResults')}</td></tr>
             ) : (
               purchases.map((p) => (
                 <tr key={p._id} className="hover:bg-gray-50">
@@ -243,6 +269,11 @@ export default function Purchases() {
                   <td className="px-4 py-3 text-sm">{p.items?.map((i) => i.category?.name).join(', ')}</td>
                   <td className="px-4 py-3 text-sm">{p.totalWeight} kg</td>
                   <td className="px-4 py-3 text-sm font-medium">₹{p.totalAmount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <button onClick={() => handleEdit(p)} className="text-indigo-600 hover:text-indigo-800">
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -251,7 +282,7 @@ export default function Purchases() {
       </div>
 
       {/* New Purchase Modal */}
-      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setScanThumb(null); }} title={t('purchases.new')} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditing(null); setScanThumb(null); }} title={editing ? t('purchases.edit') : t('purchases.new')} size="lg">
         {/* AI Scan banner */}
         <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -362,7 +393,7 @@ export default function Purchases() {
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : t('purchases.save')}</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? t('common.saving') : editing ? t('common.update') : t('purchases.save')}</button>
           </div>
         </form>
       </Modal>

@@ -20,6 +20,7 @@ import Settings from './pages/Settings.jsx';
 import Users from './pages/Users.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 import Import from './pages/Import.jsx';
+import Backup from './pages/Backup.jsx';
 
 export default function App() {
   const { loading } = useAuth();
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="/users" element={<Users />} />
                 <Route path="/audit-log" element={<AuditLog />} />
                 <Route path="/import" element={<Import />} />
+                <Route path="/backup" element={<Backup />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

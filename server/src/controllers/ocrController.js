@@ -1,8 +1,8 @@
-// AI-powered weight slip OCR using Google Gemini 1.5 Flash Vision (free tier).
-// Sends an image to Gemini and parses out structured purchase data.
+// AI-powered weight slip OCR using Groq Llama Vision (free tier).
+// Sends an image to Groq and parses out structured purchase data.
 
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 const PROMPT = `You are an OCR assistant for a scrap-metal trading business in India.
 Extract data from this weight slip / receipt image and respond with ONLY a JSON object (no markdown, no commentary) in exactly this shape:
@@ -32,56 +32,64 @@ export const scanWeightSlip = async (req, res, next) => {
       return res.status(400).json({ message: 'No image uploaded' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return res.status(500).json({
-        message: 'OCR not configured — GEMINI_API_KEY missing on server',
+        message: 'OCR not configured — GROQ_API_KEY missing on server',
       });
     }
 
     const base64Image = req.file.buffer.toString('base64');
     const mimeType = req.file.mimetype || 'image/jpeg';
 
-    const geminiResponse = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    const groqResponse = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        contents: [
+        model: MODEL,
+        messages: [
           {
-            parts: [
-              { text: PROMPT },
-              { inline_data: { mime_type: mimeType, data: base64Image } },
+            role: 'user',
+            content: [
+              { type: 'text', text: PROMPT },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
+              },
             ],
           },
         ],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-        },
+        temperature: 0.1,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' },
       }),
     });
 
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error('Gemini API error:', geminiResponse.status, errText);
+    if (!groqResponse.ok) {
+      const errText = await groqResponse.text();
+      console.error('Groq API error:', groqResponse.status, errText);
       return res
         .status(502)
-        .json({ message: `OCR service error (${geminiResponse.status})` });
+        .json({ message: `OCR service error (${groqResponse.status})` });
     }
 
-    const data = await geminiResponse.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await groqResponse.json();
+    const text = data?.choices?.[0]?.message?.content || '';
 
     let parsed;
     try {
-      // Strip any stray code fences just in case
       const cleaned = text
         .replace(/^```(?:json)?\s*/i, '')
         .replace(/\s*```\s*$/i, '')
         .trim();
       parsed = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error('Failed to parse Gemini JSON:', text);
+      console.error('Failed to parse Groq JSON:', text);
       return res.status(502).json({
         message: 'Could not parse AI response — try a clearer photo',
       });

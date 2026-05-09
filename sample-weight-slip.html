@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Weight Slip</title>
+  <style>
+    body { font-family: 'Courier New', monospace; background: #f5f5dc; padding: 40px; }
+    .slip {
+      width: 400px; margin: 0 auto; background: #fff;
+      border: 2px solid #333; padding: 24px; position: relative;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+    }
+    .slip::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 6px; background: repeating-linear-gradient(90deg, #d32f2f, #d32f2f 20px, #fff 20px, #fff 24px);
+    }
+    h2 { text-align: center; margin: 8px 0 4px; font-size: 18px; text-transform: uppercase; }
+    .subtitle { text-align: center; font-size: 11px; color: #555; margin-bottom: 16px; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px; }
+    .row .label { font-weight: bold; color: #333; }
+    .row .value { color: #111; }
+    hr { border: none; border-top: 1px dashed #999; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+    th { background: #eee; border: 1px solid #999; padding: 5px; text-align: left; }
+    td { border: 1px solid #ccc; padding: 5px; }
+    .total-row td { font-weight: bold; background: #f9f9f9; }
+    .stamp { text-align: center; margin-top: 16px; font-size: 10px; color: #888; }
+    .sign { margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px; }
+    .sign div { border-top: 1px solid #333; padding-top: 4px; width: 120px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="slip">
+    <h2>तोल पर्ची / Weight Slip</h2>
+    <p class="subtitle">श्री बालाजी वेट ब्रिज, फरीदाबाद</p>
+
+    <hr>
+
+    <div class="row"><span class="label">दिनांक / Date:</span><span class="value">18/04/2025</span></div>
+    <div class="row"><span class="label">पार्टी / Party:</span><span class="value">Ramesh Kumar</span></div>
+    <div class="row"><span class="label">वाहन नं / Vehicle:</span><span class="value">HR-55-CD-5678</span></div>
+    <div class="row"><span class="label">Slip No:</span><span class="value">4521</span></div>
+
+    <hr>
+
+    <table>
+      <thead>
+        <tr>
+          <th>माल / Material</th>
+          <th>वजन (kg)</th>
+          <th>दर ₹/kg</th>
+          <th>राशि ₹</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Iron Scrap</td>
+          <td>520</td>
+          <td>26</td>
+          <td>13,520</td>
+        </tr>
+        <tr>
+          <td>Copper Wire</td>
+          <td>85</td>
+          <td>480</td>
+          <td>40,800</td>
+        </tr>
+        <tr class="total-row">
+          <td>कुल / Total</td>
+          <td>605</td>
+          <td>—</td>
+          <td>54,320</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <hr>
+
+    <div class="row"><span class="label">Remarks:</span><span class="value">Morning lot, mixed grade</span></div>
+
+    <div class="sign">
+      <div>पार्टी हस्ताक्षर<br>(Party Sign)</div>
+      <div>तोल कर्ता<br>(Weigh Master)</div>
+    </div>
+
+    <p class="stamp">— यह कंप्यूटर जनित पर्ची है —</p>
+  </div>
+
+  <p style="text-align:center; margin-top:20px; font-size:12px; color:#666;">
+    Open this in a browser → screenshot or Print to PDF → use for OCR testing.<br>
+    Expected output: vendor="Ramesh Kumar", date="2025-04-18", items: Iron Scrap 520kg @26, Copper Wire 85kg @480
+  </p>
+</body>
+</html>

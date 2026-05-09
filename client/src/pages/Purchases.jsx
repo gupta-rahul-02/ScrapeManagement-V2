@@ -95,11 +95,28 @@ export default function Purchases() {
       const unmatched = [];
       const next = { ...form };
 
-      // Vendor: case-insensitive name match
-      if (data.vendorName) {
-        const v = vendors.find(
-          (x) => x.name.toLowerCase().trim() === data.vendorName.toLowerCase().trim()
+      // Fuzzy name matcher: exact → includes → singular/plural
+      const fuzzyFind = (list, name) => {
+        if (!name) return null;
+        const q = name.toLowerCase().trim();
+        return (
+          list.find((x) => x.name.toLowerCase().trim() === q) ||
+          list.find((x) => {
+            const n = x.name.toLowerCase().trim();
+            return n.includes(q) || q.includes(n);
+          }) ||
+          list.find((x) => {
+            const n = x.name.toLowerCase().trim().replace(/s$/, '');
+            const qn = q.replace(/s$/, '');
+            return n === qn;
+          }) ||
+          null
         );
+      };
+
+      // Vendor: fuzzy name match
+      if (data.vendorName) {
+        const v = fuzzyFind(vendors, data.vendorName);
         if (v) next.vendor = v._id;
         else unmatched.push(`${t('purchases.vendor')}: "${data.vendorName}"`);
       }
@@ -109,14 +126,10 @@ export default function Purchases() {
         next.date = data.date;
       }
 
-      // Items: match category by name
+      // Items: fuzzy match category by name
       if (Array.isArray(data.items) && data.items.length > 0) {
         const mappedItems = data.items.map((item) => {
-          const cat = categories.find(
-            (c) =>
-              item.categoryName &&
-              c.name.toLowerCase().trim() === item.categoryName.toLowerCase().trim()
-          );
+          const cat = fuzzyFind(categories, item.categoryName);
           if (!cat && item.categoryName) {
             unmatched.push(`${t('common.category')}: "${item.categoryName}"`);
           }
